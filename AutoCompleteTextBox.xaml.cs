@@ -1,15 +1,17 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Input;
+using Windows.UI.Xaml.Media.Imaging;
 
 namespace VRCatNet
 {
     public sealed partial class AutoCompleteTextBox : UserControl
     {
-        public ObservableCollection<string> Suggestions { get; set; }
+        public ObservableCollection<SuggestionItem> Suggestions { get; set; }
 
         public static readonly DependencyProperty MaxCharactersProperty =
             DependencyProperty.Register("MaxCharacters", typeof(int), typeof(MainPage), new PropertyMetadata(500));
@@ -17,7 +19,7 @@ namespace VRCatNet
         public AutoCompleteTextBox()
         {
             this.InitializeComponent();
-            Suggestions = new ObservableCollection<string>();
+            Suggestions = new ObservableCollection<SuggestionItem>();
             textBox.TextChanged += TextBox_TextChanged;
             textBox.PreviewKeyDown += TextBox_PreviewKeyDown;
             suggestionsListView.Tapped += SuggestionsListView_Tapped;
@@ -38,8 +40,28 @@ namespace VRCatNet
         private void TextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             // Implement your custom search algorithm here
-            // Update the Suggestions collection with new suggestions
+
+            // Clear the existing suggestions
+            Suggestions.Clear();
+
+            // Add new suggestions
+            //foreach (var suggestion in newSuggestions)
+            //{
+            //    Suggestions.Add(new SuggestionItem
+            //    {
+            //        Username = suggestion.Username,
+            //        EmoteImage = LoadImageFromUrl(suggestion.EmoteImageUrl)
+            //    });
+            //}
         }
+
+        private BitmapImage LoadImageFromUrl(string url)
+        {
+            var image = new BitmapImage();
+            image.UriSource = new Uri(url);
+            return image;
+        }
+
 
         private void TextBox_PreviewKeyDown(object sender, KeyRoutedEventArgs e)
         {
@@ -49,6 +71,12 @@ namespace VRCatNet
                 e.Handled = true;
             }
         }
+    }
+
+    public class SuggestionItem
+    {
+        public string Username { get; set; }
+        public BitmapImage EmoteImage { get; set; }
     }
 
     public class TrieNode
