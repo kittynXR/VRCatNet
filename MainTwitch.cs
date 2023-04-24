@@ -20,19 +20,18 @@ namespace VRCatNet
     {
         private async Task InitializeTwitchClient()
         {
+            var localSettings = ApplicationData.Current.LocalSettings;
+            var storedOAuthKey = localSettings.Values["OAuthKey"] as string;
+            var broadcasterName = localSettings.Values["BroadcasterName"] as string;
+
             try
             {
-                // Retrieve the stored OAuth key and broadcaster name
-                var localSettings = ApplicationData.Current.LocalSettings;
-                var storedOAuthKey = localSettings.Values["OAuthKey"] as string;
-                storedBroadcasterName = localSettings.Values["BroadcasterName"] as string;
-
-                if (!string.IsNullOrEmpty(storedOAuthKey) && !string.IsNullOrEmpty(storedBroadcasterName))
+                if (!string.IsNullOrEmpty(storedOAuthKey) && !string.IsNullOrEmpty(broadcasterName))
                 {
                     // Configure the Twitch client
-                    var credentials = new ConnectionCredentials(storedBroadcasterName, storedOAuthKey);
+                    var credentials = new ConnectionCredentials(broadcasterName, storedOAuthKey);
                     twitchClient = new TwitchClient();
-                    twitchClient.Initialize(credentials, storedBroadcasterName);
+                    twitchClient.Initialize(credentials, _broadcasterName);
 
                     // Subscribe to relevant events
                     twitchClient.OnMessageSent += TwitchClient_OnMessageSent;
@@ -83,7 +82,7 @@ namespace VRCatNet
             if (twitchClient.Connect())
             {
                 await Task.Delay(TimeSpan.FromSeconds(1));
-                twitchClient.JoinChannel(storedBroadcasterName);
+                twitchClient.JoinChannel(_broadcasterName);
                 twitchIsConnected = true;
             }
             else
@@ -168,7 +167,7 @@ namespace VRCatNet
             await uiSemaphore.WaitAsync(); // Wait for the semaphore
 
             if (messageSentByApp &&
-                e.ChatMessage.Username.Equals(storedBroadcasterName, StringComparison.OrdinalIgnoreCase))
+                e.ChatMessage.Username.Equals(_broadcasterName, StringComparison.OrdinalIgnoreCase))
             {
                 messageSentByApp = false;
                 return;

@@ -25,6 +25,7 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using Windows.Storage;
 using System.Linq;
+using Windows.ApplicationModel;
 using Windows.UI;
 
 namespace VRCatNet
@@ -32,8 +33,8 @@ namespace VRCatNet
 
     public sealed partial class MainPage : Page
     {
-        private int _oscPort = 9000;
-        private string _oscIP = "127.0.0.1";
+        private const int OscPort = 9000;
+        private const string OscIP = "127.0.0.1";
 
         public static readonly DependencyProperty MaxCharactersProperty =
             DependencyProperty.Register("MaxCharacters", typeof(int), typeof(MainPage), new PropertyMetadata(500));
@@ -49,7 +50,9 @@ namespace VRCatNet
         private UDPSender oscSender;
         private bool pauseScroll;
 
-        private string storedBroadcasterName;
+        private string _broadcasterName;
+
+
         private TwitchClient twitchClient;
 
         private Dictionary<string, BitmapImage> _emoteCache = new Dictionary<string, BitmapImage>();
@@ -58,6 +61,10 @@ namespace VRCatNet
         {
             InitializeComponent();
             InitializeOsc();
+
+            var localSettings = ApplicationData.Current.LocalSettings;
+            _broadcasterName = localSettings.Values["BroadcasterName"] as string;
+
             toggleTyping.UpdateButtonColor();
 
             twitchIsConnected = false;
@@ -72,6 +79,7 @@ namespace VRCatNet
             clearInputButton.Click += ClearInputButton_Click;
             clearOscEndpointButton.Click += ClearOscEndpointButton_Click;
 
+            Application.Current.Suspending += new SuspendingEventHandler(OnSuspending);
             UpdateCharacterCounter();
         }
 
@@ -85,7 +93,6 @@ namespace VRCatNet
         {
             await InitializeTwitchClient();
         }
-
 
         private void TextHistory_ContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
         {
@@ -186,7 +193,6 @@ namespace VRCatNet
             }
         }
 
-
         private void UpdateCharacterCounter()
         {
             var charactersRemaining = MaxCharacters - textInput.Text.Length;
@@ -215,7 +221,7 @@ namespace VRCatNet
             try
             {
                 if (toggleTwitch.IsChecked.Value && twitchIsConnected)
-                    twitchClient.SendMessage("#" + storedBroadcasterName, textInput.Text);
+                    twitchClient.SendMessage("#" + _broadcasterName, textInput.Text);
             }
             catch (TwitchLib.Client.Exceptions.BadStateException ex)
             {
@@ -239,7 +245,7 @@ namespace VRCatNet
                 }
 
             // Update the text history with the sent message
-            UpdateTextHistory(textInput.Text, storedBroadcasterName);
+            UpdateTextHistory(textInput.Text, _broadcasterName);
             ScrollToBottom();
 
             // Clear the text input
@@ -248,5 +254,13 @@ namespace VRCatNet
             textInput.Focus(FocusState.Programmatic);
         }
 
+        private void OnSuspending(object sender, SuspendingEventArgs e)
+        {
+            var localSettings = ApplicationData.Current.LocalSettings;
+            var storedOAuthOption = (bool)localSettings.Values["RememberOAuth"];
+
+            if (storedOAuthOption == false)
+                localSettings.Values["OAuthKey"] = "";
+        }
     }
 }

@@ -187,34 +187,38 @@ namespace VRCatNet
 
         private async void oauthButton_Click(object sender, RoutedEventArgs e)
         {
-            // Retrieve the stored broadcaster name
             var localSettings = ApplicationData.Current.LocalSettings;
+            var storedOAuthKey = localSettings.Values["OAuthKey"] as string;
             var storedBroadcasterName = localSettings.Values["BroadcasterName"] as string;
             var storedOscAddress = localSettings.Values["OSCAddress"] as string;
             var storedOscPort = localSettings.Values["OSCPort"] as string;
-            var storedConnectOption = localSettings.Values["AutoConnectTwitch"] as bool?;
-            var storedOAuthOption = localSettings.Values["RememberOAuth"] as bool?;
-            var storedOAuthKey = localSettings.Values["OAuthKey"] as string;
+            var storedConnectOption = (bool)localSettings.Values["AutoConnectTwitch"];
+            var storedOAuthOption = (bool)localSettings.Values["RememberOAuth"];
 
             // Create input fields for entering the broadcaster OAuth key, name, OSC address, and OSC port
-            var oauthInput = new PasswordBox { PlaceholderText = "OAuth key", IsEnabled = storedOAuthKey == null };
+            var oauthInput = new PasswordBox 
+                { PlaceholderText = "OAuth key",
+                    IsEnabled = storedOAuthKey == null };
+
             if (storedOAuthKey != null) oauthInput.Password = storedOAuthKey; // Replace with masked OAuth key
 
-
-            // Create input fields for entering the broadcaster OAuth key, name, OSC address, and OSC port
-            //var oauthInput = new PasswordBox { PlaceholderText = "OAuth key" };
             var broadcasterNameInput = new TextBox
-            { PlaceholderText = "Broadcaster name", Text = storedBroadcasterName ?? "" };
+            { PlaceholderText = "Broadcaster name",
+                IsEnabled = storedBroadcasterName == null,
+                Text = storedBroadcasterName ?? "" };
+
             var oscAddressInput = new TextBox
-            { PlaceholderText = "OSC address", Text = storedOscAddress ?? "" };
+            { PlaceholderText = "OSC address: default ⇾ 127.0.0.1", Text = storedOscAddress ?? "" };
             var oscPortInput = new TextBox
-            { PlaceholderText = "OSC port", Text = storedOscPort ?? "" };
+            { PlaceholderText = "OSC port: default ⇾ 9000", Text = storedOscPort ?? "" };
 
             var showOauthButton = new Button { Content = "Show OAuth key", IsEnabled = false };
             // Create a TextBlock and Button for the locked visual indicator and Edit button
             var lockedIndicator = new TextBlock
             {
                 Text = "OAuth Saved!",
+                VerticalAlignment = VerticalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Center,
                 Visibility = storedOAuthKey != null ? Visibility.Visible : Visibility.Collapsed
             };
             var editButton = new Button
@@ -227,6 +231,7 @@ namespace VRCatNet
             editButton.Click += (s, args) =>
             {
                 oauthInput.IsEnabled = true;
+                broadcasterNameInput.IsEnabled = true;
                 lockedIndicator.Visibility = Visibility.Collapsed;
                 editButton.Visibility = Visibility.Collapsed;
                 showOauthButton.IsEnabled = true;
@@ -256,19 +261,28 @@ namespace VRCatNet
 
             // Create checkboxes for remembering OAuth and automatically connecting to Twitch
             var rememberOAuthCheckBox = new CheckBox
-            { Content = "Save OAuth between sessions", IsChecked = storedOAuthOption ?? true };
+            { Content = "Save OAuth between sessions", IsChecked = storedOAuthOption };
             var autoConnectTwitchCheckBox = new CheckBox
-            { Content = "Automatically connect to Twitch", IsChecked = storedConnectOption ?? false };
+            { Content = "Automatically connect to Twitch", IsChecked = storedConnectOption };
 
             // Create a new input dialog for entering the broadcaster OAuth key, name, OSC address, and OSC port
             var oauthDialog = new ContentDialog
             {
-                Title = "Enter OAuth key, Broadcaster name, OSC address, and OSC port",
+                Title = "Settings",
                 Content = new StackPanel
                 {
                     Children =
                     {
-                        oauthInput, broadcasterNameInput, showOauthButton, lockedIndicator, editButton,
+                        oauthInput, broadcasterNameInput,
+                        new StackPanel // Nested StackPanel with Horizontal orientation
+                        {
+                            Orientation = Orientation.Horizontal,
+                            Children =
+                            {
+                                lockedIndicator, showOauthButton, editButton
+                            }
+                        },
+                        //showOauthButton, lockedIndicator, editButton,
                         oauthTokenGeneratorLink, oscAddressInput,
                         oscPortInput, rememberOAuthCheckBox, autoConnectTwitchCheckBox
                     }
@@ -279,18 +293,15 @@ namespace VRCatNet
 
             // Show the dialog and update the Twitch client's OAuth key, broadcaster name, OSC address, and OSC port if provided
             var result = await oauthDialog.ShowAsync();
-            if (result == ContentDialogResult.Primary)
-                if (!string.IsNullOrWhiteSpace(oauthInput.Password) &&
-                    !string.IsNullOrWhiteSpace(broadcasterNameInput.Text) &&
-                    !string.IsNullOrWhiteSpace(oscAddressInput.Text) &&
-                    !string.IsNullOrWhiteSpace(oscPortInput.Text))
-                {
-                    // Update the Twitch client's OAuth key, broadcaster name, OSC address, and OSC port, then reconnect
-                    //twitchClient.Disconnect();
-                    //twitchClient.Initialize(new ConnectionCredentials(broadcasterNameInput.Text, oauthInput.Password, oscAddressInput.Text, int.Parse(oscPortInput.Text))); // Update this line with the correct initialization method
-                    // Connect to Twitch asynchronously
-                    //await ConnectTwitchClientAsync(twitchClient);
 
+            // This is what happens when you click OK
+            //
+            if (result == ContentDialogResult.Primary)
+                if ((!string.IsNullOrWhiteSpace(oauthInput.Password) &&
+                    !string.IsNullOrWhiteSpace(broadcasterNameInput.Text)) || 
+                    (!string.IsNullOrWhiteSpace(oscAddressInput.Text) ||
+                    !string.IsNullOrWhiteSpace(oscPortInput.Text)))
+                {
                     localSettings.Values["OAuthKey"] = oauthInput.Password;
                     localSettings.Values["BroadcasterName"] = broadcasterNameInput.Text;
                     localSettings.Values["OSCAddress"] = oscAddressInput.Text;
