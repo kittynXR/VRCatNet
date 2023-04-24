@@ -38,9 +38,58 @@ namespace VRCatNet
     /// </summary>
     public sealed partial class MainPage : Page
     {
+        //public static readonly DependencyProperty MaxCharactersProperty =
+        //    DependencyProperty.Register("MaxCharacters", typeof(int), typeof(MainPage), new PropertyMetadata(500));
+
+        //public int MaxCharacters
+        //{
+        //    get => (int)GetValue(MaxCharactersProperty);
+        //    set => SetValue(MaxCharactersProperty, value);
+        //}
+
         public MainPage()
         {
             this.InitializeComponent();
+        }
+
+        private void toggleAudio_Checked(object sender, RoutedEventArgs e)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void toggleAudio_Unchecked(object sender, RoutedEventArgs e)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void oauthButton_Click(object sender, RoutedEventArgs e)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void initTwitchButton_Click(object sender, RoutedEventArgs e)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void textInput_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void textInput_KeyDown(object sender, KeyRoutedEventArgs e)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void TextInput_KeyUp(object sender, KeyRoutedEventArgs e)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void TextHistory_ContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
+        {
+            throw new NotImplementedException();
         }
     }
 }

@@ -1,0 +1,12 @@
+﻿<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:VRCatNet">
+
+    <Style TargetType="local:CustomToggleButton" BasedOn="{StaticResource ToggleButtonRevealStyle}">
+        <Setter Property="Background" Value="{ThemeResource ToggleButtonBackground}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource ToggleButtonBorderBrush}" />
+        <Setter Property="Foreground" Value="{ThemeResource ToggleButtonForeground}" />
+        <Setter Property="BorderThickness" Value="{ThemeResource ToggleButtonBorderThemeThickness}" />
+    </Style>
+</ResourceDictionary>

@@ -7,8 +7,48 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
-
+    <Page.Resources>
+        <local:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
+        <ItemsPanelTemplate x:Key="HorizontalItemsStackPanel">
+            <ItemsStackPanel Orientation="Horizontal" />
+        </ItemsPanelTemplate>
+        <DataTemplate x:Key="ChatItemTemplate" x:DataType="local:ChatItem">
+            <RichTextBlock IsTextSelectionEnabled="True">
+                <Paragraph>
+                    <InlineUIContainer>
+                        <ItemsControl ItemsSource="{x:Bind ChatElements}" ItemsPanel="{StaticResource HorizontalItemsStackPanel}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="local:ChatElement">
+                                    <Grid>
+                                        <TextBlock Text="{x:Bind Text}" Visibility="{x:Bind IsEmote, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Reverse}" />
+                                        <Image Source="{x:Bind EmoteImage}" Visibility="{x:Bind IsEmote, Converter={StaticResource BoolToVisibilityConverter}}" Width="28" Height="28" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </InlineUIContainer>
+                </Paragraph>
+            </RichTextBlock>
+        </DataTemplate>
+    </Page.Resources>
     <Grid RequestedTheme="Dark">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <ScrollViewer x:Name="textHistoryScrollViewer" Grid.Row="0" Margin="5">
+            <ListView x:Name="textHistory"
+                      ItemTemplate="{StaticResource ChatItemTemplate}"
+                      ScrollViewer.HorizontalScrollMode="Disabled"
+                      ScrollViewer.VerticalScrollBarVisibility="Auto"
+                      SelectionMode="None"
+                      IsItemClickEnabled="False"
+                      ContainerContentChanging="TextHistory_ContainerContentChanging"/>
+            <!-- <TextBox x:Name="textHistory" IsReadOnly="True" TextWrapping="Wrap" AcceptsReturn="True" Style="{StaticResource DarkTextBoxStyle}" /> -->
+        </ScrollViewer>
+
         <TextBox Text="Hi" Background="#660E00B7"></TextBox>
     </Grid>
 </Page>
