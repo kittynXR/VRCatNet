@@ -124,9 +124,12 @@
     </Compile>
     <Compile Include="DataModel.cs" />
     <Compile Include="Extensions.cs" />
+    <Compile Include="Main.cs" />
+    <Compile Include="MainOsc.cs" />
     <Compile Include="MainPage.xaml.cs">
       <DependentUpon>MainPage.xaml</DependentUpon>
     </Compile>
+    <Compile Include="MainTwitch.cs" />
     <Compile Include="Midi.cs" />
     <Compile Include="OscBundle.cs" />
     <Compile Include="OscMessage.cs" />
