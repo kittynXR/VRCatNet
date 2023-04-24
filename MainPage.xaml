@@ -61,6 +61,9 @@
                 </Grid.ColumnDefinitions>
 
                 <Button x:Name="clearInputButton" Content="X" Width="30" Height="30" FontSize="14" HorizontalAlignment="Center"/>
+
+
+
                 <TextBox Grid.Column="1" x:Name="textInput" Margin="5" MaxLength="{x:Bind MaxCharacters, Mode=OneWay}" TextChanged="textInput_TextChanged" KeyDown="textInput_KeyDown" KeyUp="TextInput_KeyUp" VerticalAlignment="Center" Height="32"/>
                 <TextBlock Grid.Column="2" x:Name="characterCounter" Margin="5,0,5,0" VerticalAlignment="Center" Height="19"/>
                 <Button Grid.Column="2" x:Name="sendButton" Content="Send" HorizontalAlignment="Center" Height="32" Width="51" IsEnabled="True"/>
@@ -75,7 +78,8 @@
                 <ToggleButton x:Name="toggleOsc" Content="OSC" Margin="5"/>
                 <Button x:Name="oauthButton" Content="Config" Margin="5" Click="oauthButton_Click"/>
                 <ToggleButton x:Name="togglePauseScroll" Content="Pause Scroll" Margin="5"/>
-                <Button x:Name="initTwitchButton" Content="Connect Twitch" Click="initTwitchButton_Click" />
+                <Button x:Name="initTwitchButton" Content="Connect TTV" Click="initTwitchButton_Click" />
+                <Button x:Name="discTwitchButton" Content="Disconnect TTV" Click="discTwitchButton_Click" />
             </controls:WrapPanel>
         </StackPanel>
         <!-- Text input and controls -->

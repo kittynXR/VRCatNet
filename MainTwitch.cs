@@ -54,6 +54,11 @@ namespace VRCatNet
             }
         }
 
+        private async Task DisconnectTwitchClientAsync(TwitchClient twitchClient)
+        {
+
+        }
+
         private async Task ConnectTwitchClientAsync(TwitchClient twitchClient)
         {
             TaskCompletionSource<bool> tcs = new TaskCompletionSource<bool>();

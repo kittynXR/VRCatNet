@@ -132,4 +132,6 @@ namespace VRCatNet
                 Background = new SolidColorBrush(Colors.DarkMagenta);
         }
     }
+
+
 }

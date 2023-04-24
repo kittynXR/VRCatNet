@@ -80,6 +80,8 @@ namespace VRCatNet
             clearOscEndpointButton.Click += ClearOscEndpointButton_Click;
 
             Application.Current.Suspending += new SuspendingEventHandler(OnSuspending);
+            Window.Current.Activated += OnActivated;
+
             UpdateCharacterCounter();
         }
 
@@ -211,6 +213,7 @@ namespace VRCatNet
                 // Scroll the textHistoryScrollViewer to the bottom
                 var verticalOffset = textHistoryScrollViewer.ExtentHeight - textHistoryScrollViewer.ViewportHeight;
                 textHistoryScrollViewer.ChangeView(null, verticalOffset, null, true);
+                textInput.Focus(FocusState.Programmatic);
             }
         }
 
@@ -262,5 +265,15 @@ namespace VRCatNet
             if (storedOAuthOption == false)
                 localSettings.Values["OAuthKey"] = "";
         }
+
+        private void OnActivated(object sender, WindowActivatedEventArgs e)
+        {
+            if (e.WindowActivationState == CoreWindowActivationState.CodeActivated || e.WindowActivationState == CoreWindowActivationState.PointerActivated)
+            {
+                ScrollToBottom();
+                textInput.Focus(FocusState.Programmatic);
+            }
+        }
+
     }
 }

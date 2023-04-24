@@ -1,32 +1,14 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Windows.Storage;
 using Windows.System;
 using Windows.UI;
-using Windows.UI.Core;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
-using Windows.UI.Xaml.Controls.Primitives;
-using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
 using CoreOSC;
-using TwitchLib.Client;
-using TwitchLib.Client.Events;
-using TwitchLib.Client.Models;
-using TwitchLib.Communication.Events;
-using System.ComponentModel;
-using System.Net.Http;
-using System.Runtime.CompilerServices;
-using Windows.UI.Xaml.Media.Imaging;
-using System.IO;
-using System.Collections.ObjectModel;
-using Windows.UI.Xaml.Documents;
 
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
@@ -34,7 +16,7 @@ using Windows.UI.Xaml.Documents;
 namespace VRCatNet
 {
     /// <summary>
-    /// An empty page that can be used on its own or navigated to within a Frame.
+    ///     An empty page that can be used on its own or navigated to within a Frame.
     /// </summary>
     public sealed partial class MainPage : Page
     {
@@ -44,13 +26,9 @@ namespace VRCatNet
             var chatElement = chatElementControl.DataContext as ChatElement;
 
             if (chatElement.IsEmote)
-            {
                 chatElementControl.SetImage(chatElement.EmoteImage);
-            }
             else
-            {
                 chatElementControl.SetText(chatElement.Text);
-            }
         }
 
         private void toggleAudio_Checked(object sender, RoutedEventArgs e)
@@ -63,12 +41,16 @@ namespace VRCatNet
             audioEnabled = false;
         }
 
-        protected override void OnNavigatedTo(NavigationEventArgs e)
+        protected override async void OnNavigatedTo(NavigationEventArgs e)
         {
             try
             {
                 base.OnNavigatedTo(e);
-                //Task.Run(async () => await InitializeTwitchClient());
+                var localSettings = ApplicationData.Current.LocalSettings;
+                var storedAutoConnect = (bool)localSettings.Values["AutoConnectTwitch"];
+
+                if (storedAutoConnect == true)
+                    await InitializeTwitchClient();
             }
             catch (Exception ex)
             {
@@ -78,16 +60,21 @@ namespace VRCatNet
 
         private async void initTwitchButton_Click(object sender, RoutedEventArgs e)
         {
-            try
-            {
-                await InitializeTwitchClient();
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"initTwitchButton_Click exception: {ex.Message}");
-            }
+            if (!twitchIsConnected)
+                try
+                {
+                    await InitializeTwitchClient();
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"initTwitchButton_Click exception: {ex.Message}");
+                }
 
-            //textInput.Focus(FocusState.Programmatic);
+            textInput.Focus(FocusState.Programmatic);
+        }
+
+        private async void discTwitchButton_Click(object sender, RoutedEventArgs e)
+        {
         }
 
         private void textInput_TextChanged(object sender, TextChangedEventArgs e)
@@ -102,6 +89,7 @@ namespace VRCatNet
                 isSendingMessage = true;
                 e.Handled = true;
                 SendMessage();
+                ScrollToBottom();
                 isSendingMessage = false;
             }
 
@@ -164,13 +152,14 @@ namespace VRCatNet
         private void ClearInputButton_Click(object sender, RoutedEventArgs e)
         {
             textInput.Text = "";
+            textInput.Focus(FocusState.Programmatic);
         }
 
         private void ClearOscEndpointButton_Click(object sender, RoutedEventArgs e)
         {
             // Send an empty string to the /chatbox/input OSC endpoint
             oscSender.Send(new OscMessage("/chatbox/input", ""));
-            //textInput.Focus(FocusState.Programmatic);
+            textInput.Focus(FocusState.Programmatic);
         }
 
         private void SendButton_Click(object sender, RoutedEventArgs e)
@@ -182,7 +171,8 @@ namespace VRCatNet
                 SendMessage();
                 isSendingMessage = false;
             }
-            //textInput.Focus(FocusState.Programmatic);
+
+            textInput.Focus(FocusState.Programmatic);
         }
 
         private async void oauthButton_Click(object sender, RoutedEventArgs e)
@@ -196,24 +186,34 @@ namespace VRCatNet
             var storedOAuthOption = (bool)localSettings.Values["RememberOAuth"];
 
             // Create input fields for entering the broadcaster OAuth key, name, OSC address, and OSC port
-            var oauthInput = new PasswordBox 
-                { PlaceholderText = "OAuth key",
-                    IsEnabled = storedOAuthKey == null };
+            var oauthInput = new PasswordBox
+            {
+                PlaceholderText = "OAuth key",
+                IsEnabled = storedOAuthKey == null
+            };
 
             if (storedOAuthKey != null) oauthInput.Password = storedOAuthKey; // Replace with masked OAuth key
 
             var broadcasterNameInput = new TextBox
-            { PlaceholderText = "Broadcaster name",
+            {
+                PlaceholderText = "Broadcaster name",
                 IsEnabled = storedBroadcasterName == null,
-                Text = storedBroadcasterName ?? "" };
+                Text = storedBroadcasterName ?? ""
+            };
 
             var oscAddressInput = new TextBox
-            { PlaceholderText = "OSC address: default ⇾ 127.0.0.1", Text = storedOscAddress ?? "" };
+                { PlaceholderText = "OSC address: default ⇾ 127.0.0.1", Text = storedOscAddress ?? "" };
             var oscPortInput = new TextBox
-            { PlaceholderText = "OSC port: default ⇾ 9000", Text = storedOscPort ?? "" };
+                { PlaceholderText = "OSC port: default ⇾ 9000", Text = storedOscPort ?? "" };
 
             var showOauthButton = new Button { Content = "Show OAuth key", IsEnabled = false };
             // Create a TextBlock and Button for the locked visual indicator and Edit button
+            var oauthLabel = new TextBlock
+                { Text = "OAuth Token: " };
+
+            var broadcasterNameLabel = new TextBlock
+                { Text = "Broadcaster Name: " };
+
             var lockedIndicator = new TextBlock
             {
                 Text = "OAuth Saved!",
@@ -261,9 +261,9 @@ namespace VRCatNet
 
             // Create checkboxes for remembering OAuth and automatically connecting to Twitch
             var rememberOAuthCheckBox = new CheckBox
-            { Content = "Save OAuth between sessions", IsChecked = storedOAuthOption };
+                { Content = "Save OAuth between sessions", IsChecked = storedOAuthOption };
             var autoConnectTwitchCheckBox = new CheckBox
-            { Content = "Automatically connect to Twitch", IsChecked = storedConnectOption };
+                { Content = "Automatically connect to Twitch", IsChecked = storedConnectOption };
 
             // Create a new input dialog for entering the broadcaster OAuth key, name, OSC address, and OSC port
             var oauthDialog = new ContentDialog
@@ -273,15 +273,31 @@ namespace VRCatNet
                 {
                     Children =
                     {
-                        oauthInput, broadcasterNameInput,
+                        //new StackPanel
+                        //{
+                        //    Orientation = Orientation.Horizontal,
+                        //    Children =
+                        //    {
+                        //    }
+                        //},
+                        //new StackPanel
+                        //{
+                        //    Orientation = Orientation.Horizontal,
+                        //    Children =
+                        //    {
+                        //    }
+                        //},
+                        oauthLabel, oauthInput,
+                        broadcasterNameLabel, broadcasterNameInput,
                         new StackPanel // Nested StackPanel with Horizontal orientation
                         {
                             Orientation = Orientation.Horizontal,
                             Children =
                             {
-                                lockedIndicator, showOauthButton, editButton
+                                showOauthButton, editButton
                             }
                         },
+                        lockedIndicator,
                         //showOauthButton, lockedIndicator, editButton,
                         oauthTokenGeneratorLink, oscAddressInput,
                         oscPortInput, rememberOAuthCheckBox, autoConnectTwitchCheckBox
@@ -297,21 +313,25 @@ namespace VRCatNet
             // This is what happens when you click OK
             //
             if (result == ContentDialogResult.Primary)
-                if ((!string.IsNullOrWhiteSpace(oauthInput.Password) &&
-                    !string.IsNullOrWhiteSpace(broadcasterNameInput.Text)) || 
-                    (!string.IsNullOrWhiteSpace(oscAddressInput.Text) ||
-                    !string.IsNullOrWhiteSpace(oscPortInput.Text)))
+            {
+                if (!string.IsNullOrWhiteSpace(oauthInput.Password) &&
+                    !string.IsNullOrWhiteSpace(broadcasterNameInput.Text))
                 {
                     localSettings.Values["OAuthKey"] = oauthInput.Password;
                     localSettings.Values["BroadcasterName"] = broadcasterNameInput.Text;
-                    localSettings.Values["OSCAddress"] = oscAddressInput.Text;
-                    localSettings.Values["OSCPort"] = oscPortInput.Text;
-                    localSettings.Values["RememberOAuth"] = rememberOAuthCheckBox.IsChecked;
-                    localSettings.Values["AutoConnectTwitch"] = autoConnectTwitchCheckBox.IsChecked;
-
-                    textInput.Focus(FocusState.Programmatic);
                 }
-            // Store the updated OAuth key, broadcaster name, OSC address, OSC port, and checkbox settings
+
+                localSettings.Values["OSCAddress"] = oscAddressInput.Text;
+                localSettings.Values["OSCPort"] = oscPortInput.Text;
+
+                if (oscAddressInput.Text != storedOscAddress || oscPortInput.Text != storedOscPort)
+                    InitializeOsc();
+
+                localSettings.Values["RememberOAuth"] = rememberOAuthCheckBox.IsChecked;
+                localSettings.Values["AutoConnectTwitch"] = autoConnectTwitchCheckBox.IsChecked;
+
+                textInput.Focus(FocusState.Programmatic);
+            }
         }
     }
 }

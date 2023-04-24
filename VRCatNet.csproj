@@ -119,6 +119,9 @@
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
+    <Compile Include="AutoCompleteTextBox.xaml.cs">
+      <DependentUpon>AutoCompleteTextBox.xaml</DependentUpon>
+    </Compile>
     <Compile Include="ChatElementControl.xaml.cs">
       <DependentUpon>ChatElementControl.xaml</DependentUpon>
     </Compile>
@@ -163,6 +166,10 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Page Include="AutoCompleteTextBox.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="ChatElementControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
