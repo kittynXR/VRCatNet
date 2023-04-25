@@ -22,7 +22,7 @@ namespace VRCatNet
             Suggestions = new ObservableCollection<SuggestionItem>();
             textBox.TextChanged += TextBox_TextChanged;
             textBox.PreviewKeyDown += TextBox_PreviewKeyDown;
-            suggestionsListView.Tapped += SuggestionsListView_Tapped;
+            //suggestionsListView.Tapped += SuggestionsListView_Tapped;
         }
 
         public int MaxCharacters

@@ -35,23 +35,57 @@
     <Grid RequestedTheme="Dark">
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="100"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="100"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
 
-        <ScrollViewer x:Name="textHistoryScrollViewer" Grid.Row="0" Margin="5">
-            <ListView x:Name="textHistory"
+        <!-- New column with toggle buttons -->
+        <Grid Grid.Row="0" Grid.Column="0">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                    <ToggleButton x:Name="tab1" Content="Tab 1" Margin="5"/>
+                    <ToggleButton x:Name="tab2" Content="Tab 2" Margin="5"/>
+                    <ToggleButton x:Name="tab3" Content="Tab 3" Margin="5"/>
+                    <!-- Add more ToggleButtons as needed -->
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+
+        <FlipView x:Name="textHistoryFlipView" Grid.Row="0" Grid.Column="1" Margin="5">
+            <ScrollViewer x:Name="textHistoryScrollViewer" Grid.Row="0" Margin="5">
+                <ListView x:Name="textHistory"
                       ItemTemplate="{StaticResource ChatItemTemplate}"
                       ScrollViewer.HorizontalScrollMode="Disabled"
                       ScrollViewer.VerticalScrollBarVisibility="Auto"
                       SelectionMode="None"
                       IsItemClickEnabled="False"
                       ContainerContentChanging="TextHistory_ContainerContentChanging"/>
-            <!-- <TextBox x:Name="textHistory" IsReadOnly="True" TextWrapping="Wrap" AcceptsReturn="True" Style="{StaticResource DarkTextBoxStyle}" /> -->
-        </ScrollViewer>
-
+            </ScrollViewer>
+            <ScrollViewer x:Name="textHistoryScrollViewer1" Grid.Row="0" Margin="5">
+            <ListView x:Name="textHistory2"
+                      ItemTemplate="{StaticResource ChatItemTemplate}"
+                      ScrollViewer.HorizontalScrollMode="Disabled"
+                      ScrollViewer.VerticalScrollBarVisibility="Auto"
+                      SelectionMode="None"
+                      IsItemClickEnabled="False"
+                      ContainerContentChanging="TextHistory_ContainerContentChanging"/>
+            </ScrollViewer>
+            <ScrollViewer x:Name="textHistoryScrollViewer2" Grid.Row="0" Margin="5">
+            <ListView x:Name="textHistory3"
+                      ItemTemplate="{StaticResource ChatItemTemplate}"
+                      ScrollViewer.HorizontalScrollMode="Disabled"
+                      ScrollViewer.VerticalScrollBarVisibility="Auto"
+                      SelectionMode="None"
+                      IsItemClickEnabled="False"
+                      ContainerContentChanging="TextHistory_ContainerContentChanging"/>
+            </ScrollViewer>
+        </FlipView>
         <!-- Text history and chat display -->
-        <StackPanel Grid.Row="1" Orientation="Vertical">
+        <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Vertical">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -61,8 +95,6 @@
                 </Grid.ColumnDefinitions>
 
                 <Button x:Name="clearInputButton" Content="X" Width="30" Height="30" FontSize="14" HorizontalAlignment="Center"/>
-
-
 
                 <TextBox Grid.Column="1" x:Name="textInput" Margin="5" MaxLength="{x:Bind MaxCharacters, Mode=OneWay}" TextChanged="textInput_TextChanged" KeyDown="textInput_KeyDown" KeyUp="TextInput_KeyUp" VerticalAlignment="Center" Height="32"/>
                 <TextBlock Grid.Column="2" x:Name="characterCounter" Margin="5,0,5,0" VerticalAlignment="Center" Height="19"/>
@@ -86,3 +118,4 @@
 
     </Grid>
 </Page>
+
