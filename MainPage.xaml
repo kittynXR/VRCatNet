@@ -1,4 +1,94 @@
-﻿<Page
+﻿<!--<Page
+    x:Class="VRCatNet.MainPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:VRCatNet"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:controls="using:Microsoft.Toolkit.Uwp.UI.Controls"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+    <Page.Resources>
+        <local:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
+        <ItemsPanelTemplate x:Key="HorizontalItemsStackPanel">
+            <ItemsStackPanel Orientation="Horizontal" />
+        </ItemsPanelTemplate>
+        <DataTemplate x:Key="ChatItemTemplate" x:DataType="local:ChatItem">
+            <RichTextBlock IsTextSelectionEnabled="True">
+                <Paragraph>
+                    <InlineUIContainer>
+                        <ItemsControl ItemsSource="{x:Bind ChatElements}" ItemsPanel="{StaticResource HorizontalItemsStackPanel}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="local:ChatElement">
+                                    <Grid>
+                                        <TextBlock Text="{x:Bind Text}" Visibility="{x:Bind IsEmote, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Reverse}" />
+                                        <Image Source="{x:Bind EmoteImage}" Visibility="{x:Bind IsEmote, Converter={StaticResource BoolToVisibilityConverter}}" Width="28" Height="28" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </InlineUIContainer>
+                </Paragraph>
+            </RichTextBlock>
+        </DataTemplate>
+    </Page.Resources>
+    <Grid RequestedTheme="Dark">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <ScrollViewer x:Name="textHistoryScrollViewer" Grid.Row="0" Margin="5">
+            <ListView x:Name="textHistory"
+                      ItemTemplate="{StaticResource ChatItemTemplate}"
+                      ScrollViewer.HorizontalScrollMode="Disabled"
+                      ScrollViewer.VerticalScrollBarVisibility="Auto"
+                      SelectionMode="None"
+                      IsItemClickEnabled="False"
+                      ContainerContentChanging="TextHistory_ContainerContentChanging"/>
+            ~1~ <TextBox x:Name="textHistory" IsReadOnly="True" TextWrapping="Wrap" AcceptsReturn="True" Style="{StaticResource DarkTextBoxStyle}" /> @1@
+        </ScrollViewer>
+
+        ~1~ Text history and chat display @1@
+        <StackPanel Grid.Row="1" Orientation="Vertical">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <Button x:Name="clearInputButton" Content="X" Width="30" Height="30" FontSize="14" HorizontalAlignment="Center"/>
+
+
+
+                <TextBox Grid.Column="1" x:Name="textInput" Margin="5" MaxLength="{x:Bind MaxCharacters, Mode=OneWay}" TextChanged="textInput_TextChanged" KeyDown="textInput_KeyDown" KeyUp="TextInput_KeyUp" VerticalAlignment="Center" Height="32"/>
+                <TextBlock Grid.Column="2" x:Name="characterCounter" Margin="5,0,5,0" VerticalAlignment="Center" Height="19"/>
+                <Button Grid.Column="2" x:Name="sendButton" Content="Send" HorizontalAlignment="Center" Height="32" Width="51" IsEnabled="True"/>
+
+            </Grid>
+
+            <controls:WrapPanel>
+                <Button x:Name="clearOscEndpointButton" Content="Yeet Bubble" Margin="5"/>
+                <local:CustomToggleButton x:Name="toggleTyping" Content="Typing" Margin="5" />
+                <ToggleButton x:Name="toggleAudio" Content="Bubble Pop!" Margin="5" Checked="toggleAudio_Checked" Unchecked="toggleAudio_Unchecked"/>
+                <ToggleButton x:Name="toggleTwitch" Content="Twitch" Margin="5"/>
+                <ToggleButton x:Name="toggleOsc" Content="OSC" Margin="5"/>
+                <Button x:Name="oauthButton" Content="Config" Margin="5" Click="oauthButton_Click"/>
+                <ToggleButton x:Name="togglePauseScroll" Content="Pause Scroll" Margin="5"/>
+                <Button x:Name="initTwitchButton" Content="Connect TTV" Click="initTwitchButton_Click" />
+                <Button x:Name="discTwitchButton" Content="Disconnect TTV" Click="discTwitchButton_Click" />
+            </controls:WrapPanel>
+        </StackPanel>
+        ~1~ Text input and controls @1@
+
+    </Grid>
+</Page>-->
+
+
+<Page
     x:Class="VRCatNet.MainPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -66,7 +156,7 @@
                       ContainerContentChanging="TextHistory_ContainerContentChanging"/>
             </ScrollViewer>
             <ScrollViewer x:Name="textHistoryScrollViewer1" Grid.Row="0" Margin="5">
-            <ListView x:Name="textHistory2"
+                <ListView x:Name="textHistory2"
                       ItemTemplate="{StaticResource ChatItemTemplate}"
                       ScrollViewer.HorizontalScrollMode="Disabled"
                       ScrollViewer.VerticalScrollBarVisibility="Auto"
@@ -75,7 +165,7 @@
                       ContainerContentChanging="TextHistory_ContainerContentChanging"/>
             </ScrollViewer>
             <ScrollViewer x:Name="textHistoryScrollViewer2" Grid.Row="0" Margin="5">
-            <ListView x:Name="textHistory3"
+                <ListView x:Name="textHistory3"
                       ItemTemplate="{StaticResource ChatItemTemplate}"
                       ScrollViewer.HorizontalScrollMode="Disabled"
                       ScrollViewer.VerticalScrollBarVisibility="Auto"
