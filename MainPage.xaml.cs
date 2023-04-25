@@ -64,11 +64,19 @@ namespace VRCatNet
                 try
                 {
                     await InitializeTwitchClient();
+                    initTwitchButton.Content = "Disconnect TTV";
                 }
                 catch (Exception ex)
                 {
                     Debug.WriteLine($"initTwitchButton_Click exception: {ex.Message}");
                 }
+            else
+            {
+                await ShutdownTwitchClient();
+                twitchIsConnected = false;
+                UpdateTextHistory("TTV Disconnected. . .");
+                initTwitchButton.Content = "Connect TTV";
+            }
 
             textInput.Focus(FocusState.Programmatic);
         }

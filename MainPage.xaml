@@ -99,6 +99,45 @@
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
     <Page.Resources>
+        <Style x:Key="NoArrowsFlipViewStyle" TargetType="FlipView">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="TabNavigation" Value="Once"/>
+            <Setter Property="IsTabStop" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="FlipView">
+                        <Grid>
+                            <Grid.Resources>
+                                <Style x:Key="NextButtonStyle" TargetType="Button">
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="Button">
+                                                <Border x:Name="Root" Background="Transparent"/>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                                <Style x:Key="PrevButtonStyle" TargetType="Button">
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="Button">
+                                                <Border x:Name="Root" Background="Transparent"/>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </Grid.Resources>
+                            <ScrollViewer x:Name="ScrollingHost" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" HorizontalScrollMode="Enabled" HorizontalScrollBarVisibility="Hidden" IsHorizontalRailEnabled="True" IsVerticalRailEnabled="True" IsTabStop="False" TabNavigation="Local" VerticalScrollMode="Disabled" VerticalScrollBarVisibility="Hidden" ZoomMode="Disabled">
+                                <ItemsPresenter/>
+                            </ScrollViewer>
+                            <Button x:Name="NextButtonHorizontal" HorizontalAlignment="Right" IsTabStop="False" Style="{StaticResource NextButtonStyle}" VerticalAlignment="Center" Visibility="Collapsed"/>
+                            <Button x:Name="PrevButtonHorizontal" HorizontalAlignment="Left" IsTabStop="False" Style="{StaticResource PrevButtonStyle}" VerticalAlignment="Center" Visibility="Collapsed"/>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
         <local:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
         <ItemsPanelTemplate x:Key="HorizontalItemsStackPanel">
             <ItemsStackPanel Orientation="Horizontal" />
@@ -145,7 +184,7 @@
             </ScrollViewer>
         </Grid>
 
-        <FlipView x:Name="textHistoryFlipView" Grid.Row="0" Grid.Column="1" Margin="5">
+        <FlipView x:Name="textHistoryFlipView" Grid.Row="0" Grid.Column="1" Margin="5" Style="{StaticResource NoArrowsFlipViewStyle}">
             <ScrollViewer x:Name="textHistoryScrollViewer" Grid.Row="0" Margin="5">
                 <ListView x:Name="textHistory"
                       ItemTemplate="{StaticResource ChatItemTemplate}"
@@ -201,7 +240,6 @@
                 <Button x:Name="oauthButton" Content="Config" Margin="5" Click="oauthButton_Click"/>
                 <ToggleButton x:Name="togglePauseScroll" Content="Pause Scroll" Margin="5"/>
                 <Button x:Name="initTwitchButton" Content="Connect TTV" Click="initTwitchButton_Click" />
-                <Button x:Name="discTwitchButton" Content="Disconnect TTV" Click="discTwitchButton_Click" />
             </controls:WrapPanel>
         </StackPanel>
         <!-- Text input and controls -->

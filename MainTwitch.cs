@@ -13,6 +13,8 @@ using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using TwitchLib.Communication.Events;
 using Windows.UI.Xaml.Media.Imaging;
+using TwitchLib.Communication.Clients;
+using TwitchLib.Communication.Models;
 
 namespace VRCatNet
 {
@@ -30,7 +32,14 @@ namespace VRCatNet
                 {
                     // Configure the Twitch client
                     var credentials = new ConnectionCredentials(broadcasterName, storedOAuthKey);
-                    twitchClient = new TwitchClient();
+                    var clientOptions = new ClientOptions()
+                    {
+                        MessagesAllowedInPeriod = 750,
+                        ThrottlingPeriod = TimeSpan.FromSeconds(30),
+                        ReconnectionPolicy = new ReconnectionPolicy(0, 0)
+                    };
+                    var customClient = new WebSocketClient(clientOptions);
+                    twitchClient = new TwitchClient(customClient);
                     twitchClient.Initialize(credentials, _broadcasterName);
 
                     // Subscribe to relevant events
@@ -54,9 +63,20 @@ namespace VRCatNet
             }
         }
 
-        private async Task DisconnectTwitchClientAsync(TwitchClient twitchClient)
+        private async Task ShutdownTwitchClient()
         {
+            twitchClient.OnMessageSent -= TwitchClient_OnMessageSent;
+            twitchClient.OnMessageReceived -= TwitchClient_OnMessageReceived;
+            twitchClient.OnConnected -= TwitchClient_OnConnected;
+            twitchClient.OnDisconnected -= TwitchClient_OnDisconnected;
+            twitchClient.OnJoinedChannel -= TwitchClient_OnJoinedChannel;
+            twitchClient.OnLeftChannel -= TwitchClient_OnLeftChannel;
 
+            twitchClient.OnConnectionError -= TwitchClient_OnConnectionError;
+            twitchClient.OnReconnected -= TwitchClient_OnReconnected;
+
+            twitchClient.Disconnect();
+            twitchClient = null;
         }
 
         private async Task ConnectTwitchClientAsync(TwitchClient twitchClient)
@@ -131,8 +151,6 @@ namespace VRCatNet
 
         private void TwitchClient_OnDisconnected(object sender, OnDisconnectedEventArgs e)
         {
-            //sendButton.IsEnabled = false;
-            // Handle disconnection, e.g., update UI or attempt to reconnect
         }
 
         private async Task<BitmapImage> GetEmoteImageAsync(string emoteUrl)
