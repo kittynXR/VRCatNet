@@ -208,13 +208,11 @@ namespace VRCatNet
 
         private void ScrollToBottom()
         {
-            if (!pauseScroll)
-            {
-                // Scroll the textHistoryScrollViewer to the bottom
-                var verticalOffset = textHistoryScrollViewer.ExtentHeight - textHistoryScrollViewer.ViewportHeight;
-                textHistoryScrollViewer.ChangeView(null, verticalOffset, null, true);
-                textInput.Focus(FocusState.Programmatic);
-            }
+            if (pauseScroll) return;
+            // Scroll the textHistoryScrollViewer to the bottom
+            var verticalOffset = textHistoryScrollViewer.ExtentHeight - textHistoryScrollViewer.ViewportHeight;
+            textHistoryScrollViewer.ChangeView(null, verticalOffset, null, true);
+            textInput.Focus(FocusState.Programmatic);
         }
 
         private void SendMessage()

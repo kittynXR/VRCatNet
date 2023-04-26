@@ -9,6 +9,10 @@
     d:DesignHeight="300"
     d:DesignWidth="400">
 
+    <UserControl.Resources>
+        <local:ItemTypeToVisibilityConverter x:Key="ItemTypeToVisibilityConverter" />
+    </UserControl.Resources>
+
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -21,7 +25,40 @@
             Margin="5"
             MaxLength="{x:Bind MaxCharacters, Mode=OneWay}"
             VerticalAlignment="Center"
-            Height="32" />
+            Height="32"
+            TextChanged="TextBox_TextChanged"
+            PreviewKeyDown="TextBox_PreviewKeyDown"/>
+
+        <ListView
+            x:Name="suggestionsListView"
+            Grid.Row="1"
+            ItemsSource="{x:Bind Suggestions, Mode=OneWay}"
+            SelectionMode="Single">
+            <ListView.ItemTemplate>
+                <DataTemplate x:DataType="local:SuggestionItem">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock
+                            Grid.Column="0"
+                            Text="{x:Bind Text}"
+                            Visibility="{x:Bind ItemType, Converter={StaticResource ItemTypeToVisibilityConverter}, ConverterParameter=Username}" />
+                        <GridView
+                            Grid.Column="1"
+                            ItemsSource="{x:Bind Emoji}"
+                            Visibility="{x:Bind ItemType, Converter={StaticResource ItemTypeToVisibilityConverter}, ConverterParameter=Emoji}">
+                            <GridView.ItemTemplate>
+                                <DataTemplate>
+                                    <Image Source="{Binding}" Width="32" Height="32" />
+                                </DataTemplate>
+                            </GridView.ItemTemplate>
+                        </GridView>
+                    </Grid>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
 
         <!--<ListView Grid.Row="1" x:Name="suggestionsListView" ItemsSource="{x:Bind Suggestions, Mode=OneWay}" Margin="0,5,0,0">
             <ListView.ItemTemplate>

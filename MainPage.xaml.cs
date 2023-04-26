@@ -9,6 +9,7 @@ using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
 using CoreOSC;
+using System.Collections.Generic;
 
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
@@ -325,6 +326,7 @@ namespace VRCatNet
                 if (!string.IsNullOrWhiteSpace(oauthInput.Password) &&
                     !string.IsNullOrWhiteSpace(broadcasterNameInput.Text))
                 {
+                    //storeAuthData(oauthInput.Password);
                     localSettings.Values["OAuthKey"] = oauthInput.Password;
                     localSettings.Values["BroadcasterName"] = broadcasterNameInput.Text;
                 }
@@ -341,5 +343,34 @@ namespace VRCatNet
                 textInput.Focus(FocusState.Programmatic);
             }
         }
+
+        //private void storeAuthData(string authString)
+        //{
+        //    string[] keyValuePairs = authString.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+        //    Dictionary<string, string> values = new Dictionary<string, string>();
+
+        //    foreach (string keyValuePair in keyValuePairs)
+        //    {
+        //        // Split each key-value pair into key and value
+        //        string[] keyValue = keyValuePair.Split(new char[] { '=' }, StringSplitOptions.RemoveEmptyEntries);
+
+        //        if (keyValue.Length == 2)
+        //        {
+        //            values[keyValue[0]] = keyValue[1];
+        //        }
+        //    }
+
+        //    string username = values.ContainsKey("username") ? values["username"] : null;
+        //    string user_id = values.ContainsKey("user_id") ? values["user_id"] : null;
+        //    string client_id = values.ContainsKey("client_id") ? values["client_id"] : null;
+        //    string oauth_token = values.ContainsKey("oauth_token") ? values["oauth_token"] : null;
+
+        //    var localSettings = ApplicationData.Current.LocalSettings;
+
+        //    localSettings.Values["username"] = username;
+        //    localSettings.Values["user_id"] = user_id;
+        //    localSettings.Values["client_id"] = client_id;
+        //    localSettings.Values["client"] = oauth_token;
+        //}
     }
 }

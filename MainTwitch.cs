@@ -32,14 +32,7 @@ namespace VRCatNet
                 {
                     // Configure the Twitch client
                     var credentials = new ConnectionCredentials(broadcasterName, storedOAuthKey);
-                    var clientOptions = new ClientOptions()
-                    {
-                        MessagesAllowedInPeriod = 750,
-                        ThrottlingPeriod = TimeSpan.FromSeconds(30),
-                        ReconnectionPolicy = new ReconnectionPolicy(0, 0)
-                    };
-                    var customClient = new WebSocketClient(clientOptions);
-                    twitchClient = new TwitchClient(customClient);
+                    twitchClient = new TwitchClient();
                     twitchClient.Initialize(credentials, _broadcasterName);
 
                     // Subscribe to relevant events
@@ -220,7 +213,7 @@ namespace VRCatNet
                 });
         }
 
-        private async void TwitchClient_OnReconnected(object sender, OnReconnectedEventArgs e)
+        private async void TwitchClient_OnReconnected(object sender, EventArgs e)
         {
             Debug.WriteLine("Reconnected to Twitch chat.");
             await Dispatcher.RunAsync(CoreDispatcherPriority.Normal,

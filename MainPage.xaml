@@ -219,15 +219,16 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <Button x:Name="clearInputButton" Content="X" Width="30" Height="30" FontSize="14" HorizontalAlignment="Center"/>
+                <Button Grid.Column="0" x:Name="clearInputButton" Content="X" Width="30" Height="30" FontSize="14" HorizontalAlignment="Center"/>
 
+                <!--<local:AutoCompleteTextBox Grid.Column="1" x:Name="tabCompleteBox"></local:AutoCompleteTextBox>-->
                 <TextBox Grid.Column="1" x:Name="textInput" Margin="5" MaxLength="{x:Bind MaxCharacters, Mode=OneWay}" TextChanged="textInput_TextChanged" KeyDown="textInput_KeyDown" KeyUp="TextInput_KeyUp" VerticalAlignment="Center" Height="32"/>
                 <TextBlock Grid.Column="2" x:Name="characterCounter" Margin="5,0,5,0" VerticalAlignment="Center" Height="19"/>
-                <Button Grid.Column="2" x:Name="sendButton" Content="Send" HorizontalAlignment="Center" Height="32" Width="51" IsEnabled="True"/>
+                <Button Grid.Column="3" x:Name="sendButton" Content="Send" HorizontalAlignment="Center" Height="32" Width="51" IsEnabled="True"/>
 
             </Grid>
 
