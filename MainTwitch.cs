@@ -117,6 +117,7 @@ namespace VRCatNet
                 () =>
                 {
                     UpdateTextHistory($"Connected to Twitch chat.\n");
+                    toggleTwitch.IsChecked = true;
                 });
         }
 
@@ -191,11 +192,19 @@ namespace VRCatNet
 
             try
             {
-                await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+                if (Dispatcher.HasThreadAccess)
                 {
                     UpdateTextHistory(e.ChatMessage.Message, e.ChatMessage.Username, e.ChatMessage.EmoteSet.Emotes);
                     ScrollToBottom();
-                });
+                }
+                else
+                {
+                    await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+                    {
+                        UpdateTextHistory(e.ChatMessage.Message, e.ChatMessage.Username, e.ChatMessage.EmoteSet.Emotes);
+                        ScrollToBottom();
+                    });
+                }
             }
             finally
             {

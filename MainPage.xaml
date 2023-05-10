@@ -87,7 +87,6 @@
     </Grid>
 </Page>-->
 
-
 <Page
     x:Class="VRCatNet.MainPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -99,45 +98,6 @@
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
     <Page.Resources>
-        <Style x:Key="NoArrowsFlipViewStyle" TargetType="FlipView">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="TabNavigation" Value="Once"/>
-            <Setter Property="IsTabStop" Value="False"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="FlipView">
-                        <Grid>
-                            <Grid.Resources>
-                                <Style x:Key="NextButtonStyle" TargetType="Button">
-                                    <Setter Property="Template">
-                                        <Setter.Value>
-                                            <ControlTemplate TargetType="Button">
-                                                <Border x:Name="Root" Background="Transparent"/>
-                                            </ControlTemplate>
-                                        </Setter.Value>
-                                    </Setter>
-                                </Style>
-                                <Style x:Key="PrevButtonStyle" TargetType="Button">
-                                    <Setter Property="Template">
-                                        <Setter.Value>
-                                            <ControlTemplate TargetType="Button">
-                                                <Border x:Name="Root" Background="Transparent"/>
-                                            </ControlTemplate>
-                                        </Setter.Value>
-                                    </Setter>
-                                </Style>
-                            </Grid.Resources>
-                            <ScrollViewer x:Name="ScrollingHost" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" HorizontalScrollMode="Enabled" HorizontalScrollBarVisibility="Hidden" IsHorizontalRailEnabled="True" IsVerticalRailEnabled="True" IsTabStop="False" TabNavigation="Local" VerticalScrollMode="Disabled" VerticalScrollBarVisibility="Hidden" ZoomMode="Disabled">
-                                <ItemsPresenter/>
-                            </ScrollViewer>
-                            <Button x:Name="NextButtonHorizontal" HorizontalAlignment="Right" IsTabStop="False" Style="{StaticResource NextButtonStyle}" VerticalAlignment="Center" Visibility="Collapsed"/>
-                            <Button x:Name="PrevButtonHorizontal" HorizontalAlignment="Left" IsTabStop="False" Style="{StaticResource PrevButtonStyle}" VerticalAlignment="Center" Visibility="Collapsed"/>
-                        </Grid>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
         <local:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
         <ItemsPanelTemplate x:Key="HorizontalItemsStackPanel">
             <ItemsStackPanel Orientation="Horizontal" />
@@ -174,46 +134,43 @@
 
         <!-- New column with toggle buttons -->
         <Grid Grid.Row="0" Grid.Column="0">
-            <ScrollViewer VerticalScrollBarVisibility="Auto">
-                <StackPanel>
-                    <ToggleButton x:Name="tab1" Content="Tab 1" Margin="5"/>
-                    <ToggleButton x:Name="tab2" Content="Tab 2" Margin="5"/>
-                    <ToggleButton x:Name="tab3" Content="Tab 3" Margin="5"/>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <StackPanel Grid.Row="0">
+                    <Button x:Name="quickChat1" Content="GAMBA" Margin="5"/>
+                    <Button x:Name="quickChat2" Content="drop" Margin="5"/>
+                    <Button x:Name="quickChat3" Content="drop" Margin="5"/>
+                    <Button x:Name="quickChat4" Content="" Margin="5"/>
+                    <Button x:Name="quickChat5" Content="" Margin="5"/>
+                    <Button x:Name="wsConnect" Content="OBS->" Margin="5"/>
+                    <Button x:Name="sceneChange1" Content="brb" Margin="5"/>
+                    <Button x:Name="sceneChange2" Content="back" Margin="5"/>
                     <!-- Add more ToggleButtons as needed -->
                 </StackPanel>
+
+                <ToggleButton x:Name="obsRecord" Content="*REC*" Margin="5"/>
+                <Button x:Name="newChatButton" Content="New Chat" Margin="5" Grid.Row="1"/>
+            </Grid>
+
+        </Grid>
+
+        <!-- Text history and chat display -->
+        <Grid Grid.Row="0" Grid.Column="1" Margin="5">
+            <ScrollViewer x:Name="textHistoryScrollViewer">
+                <ListView x:Name="textHistory"
+              ItemTemplate="{StaticResource ChatItemTemplate}"
+              ScrollViewer.HorizontalScrollMode="Disabled"
+              ScrollViewer.VerticalScrollBarVisibility="Auto"
+              SelectionMode="None"
+              IsItemClickEnabled="False"
+              ContainerContentChanging="TextHistory_ContainerContentChanging"/>
             </ScrollViewer>
         </Grid>
 
-        <FlipView x:Name="textHistoryFlipView" Grid.Row="0" Grid.Column="1" Margin="5" Style="{StaticResource NoArrowsFlipViewStyle}">
-            <ScrollViewer x:Name="textHistoryScrollViewer" Grid.Row="0" Margin="5">
-                <ListView x:Name="textHistory"
-                      ItemTemplate="{StaticResource ChatItemTemplate}"
-                      ScrollViewer.HorizontalScrollMode="Disabled"
-                      ScrollViewer.VerticalScrollBarVisibility="Auto"
-                      SelectionMode="None"
-                      IsItemClickEnabled="False"
-                      ContainerContentChanging="TextHistory_ContainerContentChanging"/>
-            </ScrollViewer>
-            <ScrollViewer x:Name="textHistoryScrollViewer1" Grid.Row="0" Margin="5">
-                <ListView x:Name="textHistory2"
-                      ItemTemplate="{StaticResource ChatItemTemplate}"
-                      ScrollViewer.HorizontalScrollMode="Disabled"
-                      ScrollViewer.VerticalScrollBarVisibility="Auto"
-                      SelectionMode="None"
-                      IsItemClickEnabled="False"
-                      ContainerContentChanging="TextHistory_ContainerContentChanging"/>
-            </ScrollViewer>
-            <ScrollViewer x:Name="textHistoryScrollViewer2" Grid.Row="0" Margin="5">
-                <ListView x:Name="textHistory3"
-                      ItemTemplate="{StaticResource ChatItemTemplate}"
-                      ScrollViewer.HorizontalScrollMode="Disabled"
-                      ScrollViewer.VerticalScrollBarVisibility="Auto"
-                      SelectionMode="None"
-                      IsItemClickEnabled="False"
-                      ContainerContentChanging="TextHistory_ContainerContentChanging"/>
-            </ScrollViewer>
-        </FlipView>
-        <!-- Text history and chat display -->
         <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Vertical">
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -224,7 +181,9 @@
                 </Grid.ColumnDefinitions>
 
                 <Button Grid.Column="0" x:Name="clearInputButton" Content="X" Width="30" Height="30" FontSize="14" HorizontalAlignment="Center"/>
-
+<StackPanel x:Name="MainStackPanel">
+    <!-- Other controls here -->
+</StackPanel>
                 <!--<local:AutoCompleteTextBox Grid.Column="1" x:Name="tabCompleteBox"></local:AutoCompleteTextBox>-->
                 <TextBox Grid.Column="1" x:Name="textInput" Margin="5" MaxLength="{x:Bind MaxCharacters, Mode=OneWay}" TextChanged="textInput_TextChanged" KeyDown="textInput_KeyDown" KeyUp="TextInput_KeyUp" VerticalAlignment="Center" Height="32"/>
                 <TextBlock Grid.Column="2" x:Name="characterCounter" Margin="5,0,5,0" VerticalAlignment="Center" Height="19"/>
@@ -247,4 +206,5 @@
 
     </Grid>
 </Page>
+
 
