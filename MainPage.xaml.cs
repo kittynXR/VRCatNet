@@ -11,7 +11,13 @@ using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
 
-
+//////////
+/////
+///release for every platform///
+////
+////
+////
+//
 ////////////////////////// TODO:  make it so when you disconnect twitch it actually cleans up the chat
 ///   turn tabs into buttons
 ///   
@@ -25,54 +31,29 @@ namespace VRCatNet
   /// </summary>
   public sealed partial class MainPage : Page
   {
-    private void QuickChat1_Click(object sender, RoutedEventArgs e)
+    private void gButton_Click(object sender, RoutedEventArgs e)
     {
       if (!isSendingMessage)
       {
         isSendingMessage = true;
         messageSentByApp = true;
         textInput.Text = "!gamba all";
-
+        
         SendMessage();
         isSendingMessage = false;
       }
 
       textInput.Focus(FocusState.Programmatic);
     }
-
-    private void QuickChat2_Click(object sender, RoutedEventArgs e)
+    
+    private void SceneChange1_Click(object sender, RoutedEventArgs e)
     {
-      if (!isSendingMessage)
-      {
-        isSendingMessage = true;
-        messageSentByApp = true;
-        textInput.Text = "!drop kittyn9Ucute";
-
-        SendMessage();
-        isSendingMessage = false;
-      }
-
-      textInput.Focus(FocusState.Programmatic);
+      SetCurrentScene("BRB rq");
     }
 
-    private void QuickChat3_Click(object sender, RoutedEventArgs e)
+    private void SceneChange2_Click(object sender, RoutedEventArgs e)
     {
-      if (!isSendingMessage)
-      {
-        isSendingMessage = true;
-        messageSentByApp = true;
-        textInput.Text = "!drop luunavrPizza";
-
-        SendMessage();
-        isSendingMessage = false;
-      }
-
-      textInput.Focus(FocusState.Programmatic);
-    }
-
-    private async void wsConnect_ClickAsync(object sender, RoutedEventArgs e)
-    {
-      await OBSConnect();
+      SetCurrentScene("Art Stream");
     }
 
     private void ChatElementControl_Loaded(object sender, RoutedEventArgs e)
@@ -374,12 +355,6 @@ namespace VRCatNet
       var autoConnectTwitchCheckBox = new CheckBox
       { Content = "Automatically connect to Twitch", IsChecked = storedConnectOption };
 
-      var obsAddressInput = new TextBox
-      { PlaceholderText = "OBS WS address: default ⇾ 127.0.0.1", Text = storedObsAddress ?? "" };
-      var obsPortInput = new TextBox
-      { PlaceholderText = "OBS WS port: default ⇾ 4455", Text = storedObsPort ?? "" };
-      var obsPasswordInput = new TextBox
-      { PlaceholderText = "OBS port: default ⇾ [none]", Text = storedObsPassword ?? "" };
 
       // Create a new input dialog for entering the broadcaster OAuth key, name, OSC address, and OSC port
       var oauthDialog = new ContentDialog
@@ -389,20 +364,6 @@ namespace VRCatNet
         {
           Children =
                     {
-                        //new StackPanel
-                        //{
-                        //    Orientation = Orientation.Horizontal,
-                        //    Children =
-                        //    {
-                        //    }
-                        //},
-                        //new StackPanel
-                        //{
-                        //    Orientation = Orientation.Horizontal,
-                        //    Children =
-                        //    {
-                        //    }
-                        //},
                         oauthLabel, oauthInput,
                         broadcasterNameLabel, broadcasterNameInput,
                         new StackPanel // Nested StackPanel with Horizontal orientation
@@ -414,10 +375,8 @@ namespace VRCatNet
                             }
                         },
                         lockedIndicator,
-                        //showOauthButton, lockedIndicator, editButton,
                         oauthTokenGeneratorLink, oscAddressInput,
-                        oscPortInput, rememberOAuthCheckBox, autoConnectTwitchCheckBox,
-                        obsAddressInput, obsPortInput, obsPasswordInput
+                        oscPortInput, rememberOAuthCheckBox, autoConnectTwitchCheckBox
                     }
         },
         PrimaryButtonText = "OK",

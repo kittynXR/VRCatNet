@@ -78,18 +78,21 @@ namespace VRCatNet
       // Add event handlers for the send button and return key
       sendButton.Click += SendButton_Click;
 
-      quickChat1.Click             += QuickChat1_Click;
-      quickChat2.Click             += QuickChat2_Click;
-      quickChat3.Click             += QuickChat3_Click;
-      wsConnect.Click              += wsConnect_ClickAsync;
-      textInput.KeyDown            += TextInput_KeyUp;
-      clearInputButton.Click       += ClearInputButton_Click;
-      clearOscEndpointButton.Click += ClearOscEndpointButton_Click;
+      oscTriggers.Click             += OscTriggers_Click;
+      gButton.Click                 += gButton_Click;
+      textInput.KeyDown             += TextInput_KeyUp;
+      clearInputButton.Click        += ClearInputButton_Click;
+      clearOscEndpointButton.Click  += ClearOscEndpointButton_Click;
 
       Application.Current.Suspending += new SuspendingEventHandler(OnSuspending);
       Window.Current.Activated += OnActivated;
 
       UpdateCharacterCounter();
+    }
+
+    private void OscTriggers_Click(object sender, RoutedEventArgs e)
+    {
+      throw new NotImplementedException();
     }
 
     public int MaxCharacters

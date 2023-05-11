@@ -95,9 +95,14 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:controls="using:Microsoft.Toolkit.Uwp.UI.Controls"
-    mc:Ignorable="d"
-    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+    mc:Ignorable="d">
     <Page.Resources>
+        <Style TargetType="Button">
+          <Setter Property="MinHeight" Value="50"/>
+        </Style>
+        <Style TargetType="ToggleButton">
+          <Setter Property="MinHeight" Value="50"/>
+        </Style>
         <local:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
         <ItemsPanelTemplate x:Key="HorizontalItemsStackPanel">
             <ItemsStackPanel Orientation="Horizontal" />
@@ -121,6 +126,12 @@
             </RichTextBlock>
         </DataTemplate>
     </Page.Resources>
+    <Page.Background>
+        <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
+            <GradientStop Color="Black"/>
+            <GradientStop Color="#FF390075" Offset="1"/>
+        </LinearGradientBrush>
+    </Page.Background>
     <Grid RequestedTheme="Dark">
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
@@ -137,25 +148,30 @@
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*"/>
-                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <StackPanel Grid.Row="0">
-                    <Button x:Name="quickChat1" Content="GAMBA" Margin="5"/>
-                    <Button x:Name="quickChat2" Content="drop" Margin="5"/>
-                    <Button x:Name="quickChat3" Content="drop" Margin="5"/>
-                    <Button x:Name="quickChat4" Content="" Margin="5"/>
-                    <Button x:Name="quickChat5" Content="" Margin="5"/>
-                    <Button x:Name="wsConnect" Content="OBS->" Margin="5"/>
-                    <Button x:Name="sceneChange1" Content="brb" Margin="5"/>
-                    <Button x:Name="sceneChange2" Content="back" Margin="5"/>
-                    <!-- Add more ToggleButtons as needed -->
-                </StackPanel>
-
-                <ToggleButton x:Name="obsRecord" Content="*REC*" Margin="5"/>
-                <Button x:Name="newChatButton" Content="New Chat" Margin="5" Grid.Row="1"/>
+                    <Button x:Name="oscTriggers" Grid.Row="0" Content="Osc EP" Margin="5" HorizontalAlignment="Stretch" Width="85" VerticalAlignment="Stretch"/>
+                    <Button x:Name="dropGame" Grid.Row="1" Content="drop" Margin="5" HorizontalAlignment="Stretch" Width="85" VerticalAlignment="Stretch"/>
+                    <Button x:Name="ttvPoints" Grid.Row="2" Content="ttv points" Margin="5" HorizontalAlignment="Stretch" Width="85" VerticalAlignment="Stretch"/>
+                    <Button x:Name="twitchPrediction" Grid.Row="3" Content="prediction" Margin="5" HorizontalAlignment="Stretch" Width="85" VerticalAlignment="Stretch"/>
+                    <Button x:Name="twitchPoll" Grid.Row="4" Content="new poll" Margin="5" HorizontalAlignment="Stretch" Width="85" VerticalAlignment="Stretch"/>
+                    <Button x:Name="sceneSelector" Grid.Row="5" Content="Scenes" Margin="5" HorizontalAlignment="Stretch" Width="85" VerticalAlignment="Stretch"/>
+                    <Button x:Name="sourceSelector" Grid.Row="6" Content="Sources" Margin="5" Width="85" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+                    <Button x:Name="obsConfig"  Grid.Row="7" Content="OBS Config" Width="90" HorizontalAlignment="Center" Margin="0,10,0,0"/>
+                    <Button x:Name="vrCat"  Grid.Row="8" Content="cat" Width="90" HorizontalAlignment="Center" Background="#3300FFED"/>
+                    <ToggleButton x:Name="obsRecordToggle"  Grid.Row="9" Content="*REC*" Width="90" HorizontalAlignment="Center" VerticalAlignment="Stretch"/>
+                    <Button x:Name="newChatButton"  Grid.Row="10" Content="New Chat" Width="90" HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Grid>
-
         </Grid>
 
         <!-- Text history and chat display -->
@@ -181,27 +197,28 @@
                 </Grid.ColumnDefinitions>
 
                 <Button Grid.Column="0" x:Name="clearInputButton" Content="X" Width="30" Height="30" FontSize="14" HorizontalAlignment="Center"/>
-<StackPanel x:Name="MainStackPanel">
-    <!-- Other controls here -->
-</StackPanel>
+                <StackPanel x:Name="MainStackPanel">
+                    <!-- Other controls here -->
+                </StackPanel>
                 <!--<local:AutoCompleteTextBox Grid.Column="1" x:Name="tabCompleteBox"></local:AutoCompleteTextBox>-->
-                <TextBox Grid.Column="1" x:Name="textInput" Margin="5" MaxLength="{x:Bind MaxCharacters, Mode=OneWay}" TextChanged="textInput_TextChanged" KeyDown="textInput_KeyDown" KeyUp="TextInput_KeyUp" VerticalAlignment="Center" Height="32"/>
+                <TextBox Grid.Column="1" x:Name="textInput" Margin="5" MaxLength="{x:Bind MaxCharacters, Mode=OneWay}" TextChanged="textInput_TextChanged" KeyDown="textInput_KeyDown" KeyUp="TextInput_KeyUp" VerticalAlignment="Center" Height="32" RenderTransformOrigin="0.5,0.266"/>
                 <TextBlock Grid.Column="2" x:Name="characterCounter" Margin="5,0,5,0" VerticalAlignment="Center" Height="19"/>
-                <Button Grid.Column="3" x:Name="sendButton" Content="Send" HorizontalAlignment="Center" Height="32" Width="51" IsEnabled="True"/>
+                <Button Grid.Column="3" x:Name="sendButton" Content="Send" HorizontalAlignment="Center" Height="50" Width="80" IsEnabled="True" Margin="0,0,5,0"/>
 
             </Grid>
 
-            <controls:WrapPanel>
-                <Button x:Name="clearOscEndpointButton" Content="Yeet Bubble" Margin="5"/>
-                <local:CustomToggleButton x:Name="toggleTyping" Content="Typing" Margin="5" />
-                <ToggleButton x:Name="toggleAudio" Content="Bubble Pop!" Margin="5" Checked="toggleAudio_Checked" Unchecked="toggleAudio_Unchecked"/>
-                <ToggleButton x:Name="toggleTwitch" Content="Twitch" Margin="5"/>
-                <ToggleButton x:Name="toggleOsc" Content="OSC" Margin="5"/>
-                <Button x:Name="oauthButton" Content="Config" Margin="5" Click="oauthButton_Click"/>
-                <ToggleButton x:Name="togglePauseScroll" Content="Pause Scroll" Margin="5"/>
-                <Button x:Name="initTwitchButton" Content="Connect TTV" Click="initTwitchButton_Click" />
+            <controls:WrapPanel RenderTransformOrigin="0.502,0.234" Height="49">
+                <Button x:Name="clearOscEndpointButton" Content="Yeet Bubble" Margin="5" Height="50"/>
+                <local:CustomToggleButton x:Name="toggleTyping" Content="Typing" Margin="5" Height="50" />
+                <ToggleButton x:Name="toggleAudio" Content="Bubble Pop!" Margin="5" Checked="toggleAudio_Checked" Unchecked="toggleAudio_Unchecked" Height="50"/>
+                <ToggleButton x:Name="toggleTwitch" Content="Twitch" Margin="5" Height="50"/>
+                <ToggleButton x:Name="toggleOsc" Content="OSC" Margin="5" Height="50"/>
+                <Button x:Name="oauthButton" Content="Config" Margin="5" Click="oauthButton_Click" Height="50"/>
+                <ToggleButton x:Name="togglePauseScroll" Content="Pause Scroll" Margin="5" Height="50"/>
+                <Button x:Name="initTwitchButton" Content="Connect TTV" Click="initTwitchButton_Click" Margin="5" Height="50" />
             </controls:WrapPanel>
         </StackPanel>
+        <Button x:Name="gButton" Content="GAMBA" HorizontalAlignment="Center" Height="80" Grid.Row="1" Width="80"/>
         <!-- Text input and controls -->
 
     </Grid>
