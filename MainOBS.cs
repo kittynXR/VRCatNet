@@ -17,6 +17,10 @@ namespace VRCatNet
     private const string ObsPassword = "";
     private Windows.Networking.Sockets.MessageWebSocket messageWebSocket;
 
+    private void InitializeObs()
+    {
+
+    }
     private async Task OBSConnect()
     {
       messageWebSocket = new Windows.Networking.Sockets.MessageWebSocket();
@@ -52,12 +56,16 @@ namespace VRCatNet
       }
     }
 
+    private async Task OBSListen()
+    {
+
+    }
     private async Task SendMessageUsingMessageWebSocketAsync(string message)
     {
       using (var dataWriter = new DataWriter(this.messageWebSocket.OutputStream))
       {
         dataWriter.WriteString(message);
-        await dataWriter.StoreAsync();
+        //_ = await dataWriter.StoreAsync();
         dataWriter.DetachStream();
       }
       Debug.WriteLine("Sending message using MessageWebSocket: " + message);
@@ -80,6 +88,11 @@ namespace VRCatNet
         Windows.Web.WebErrorStatus webErrorStatus = Windows.Networking.Sockets.WebSocketError.GetStatus(ex.GetBaseException().HResult);
         // Add additional code here to handle exceptions.
       }
+    }
+
+    private void SetCurrentScene(string scene)
+    {
+
     }
 
     private void WebSocket_Closed(Windows.Networking.Sockets.IWebSocket sender, Windows.Networking.Sockets.WebSocketClosedEventArgs args)
