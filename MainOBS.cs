@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using Windows.Storage;
 using Windows.Storage.Streams;
+using Windows.System;
 using Windows.UI;
 using Windows.UI.Core;
 using Windows.UI.Xaml.Controls;
@@ -14,10 +15,6 @@ namespace VRCatNet
 {
   public sealed partial class MainPage : Page
   {
-    private const int ObsPort = 4455;
-    //private const string ObsIP = "ws://127.0.0.1:4455/";
-    private const string ObsIP = "ws://10.0.0.1:4455/";
-    private const string ObsPassword = "";
     private Windows.Networking.Sockets.MessageWebSocket messageWebSocket;
 
     private void InitializeObs()
@@ -31,45 +28,88 @@ namespace VRCatNet
 
     private async void ObsConfig_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
     {
-      string storedObsIP, storedObsPort, storedObsPassword;
+      string OBSAddress = "127.0.0.1";
+      string OBSPort = "4455";
+      string OBSPassword = "";
+
       var localSettings = ApplicationData.Current.LocalSettings;
 
-      if (localSettings.Values.TryGetValue("ObsIP", out object obsIP))
-        storedObsIP = obsIP as string;
-      else
-        storedObsIP = null;
+      string storedOBSAddress, storedObsPort, storedObsPassword;
+      bool storedSSLOption, storedObsConnectOption, storedObsPasswordOption;
 
-      if (localSettings.Values.TryGetValue("ObsPort", out object obsPort))
+      if (localSettings.Values.TryGetValue("OBSAdress", out object obsAddress))
+        storedOBSAddress = obsAddress as string;
+      else
+        storedOBSAddress = null;
+
+      if (localSettings.Values.TryGetValue("OBSPort", out object obsPort))
         storedObsPort = obsPort as string;
       else
         storedObsPort = null;
 
-      if (localSettings.Values.TryGetValue("ObsPassword", out object obsPassword))
+      if (localSettings.Values.TryGetValue("OBSPassword", out object obsPassword))
         storedObsPassword = obsPassword as string;
       else
         storedObsPassword = null;
 
-      var obsAddressInput = new TextBox
-      { PlaceholderText = "OBS WS address: default ⇾ 127.0.0.1", Text = storedObsIP ?? "" };
-      var obsPortInput = new TextBox
-      { PlaceholderText = "OBS WS port: default ⇾ 4455", Text = storedObsPort ?? "" };
-      var obsPasswordInput = new TextBox
-      { PlaceholderText = "OBS password: default ⇾ [none]", Text = storedObsPassword ?? "" };
+      if(localSettings.Values.TryGetValue("SSLOption", out object useSSLOption))
+        storedSSLOption = (bool)useSSLOption;
+      else
+        storedSSLOption = false;
+
+      if (localSettings.Values.TryGetValue("AutoConnectOBS", out object obsConnectOption))
+        storedObsConnectOption = (bool)obsConnectOption;
+      else
+        storedObsConnectOption = false;
+
+      if (localSettings.Values.TryGetValue("RememberOBSPassword", out object obsPasswordOption))
+        storedObsPasswordOption = (bool)obsPasswordOption;
+      else
+        storedObsPasswordOption = false;
+
+      var obsAddressInput  = new TextBox
+      { PlaceholderText    = "OBS WS address: default ⇾ 127.0.0.1", Text = storedOBSAddress ?? "" };
+      var obsPortInput     = new TextBox
+      { PlaceholderText    = "OBS WS port: default ⇾ 4455", Text = storedObsPort ?? "" };
+      var obsPasswordInput = new PasswordBox
+      { PlaceholderText    = "OBS password: default ⇾ [none]", Password = storedObsPassword ?? "" };
+
+      var useSSL = new CheckBox
+      { Content = "Use SSL",
+        IsChecked = storedSSLOption };
+      var autoConnectObsCheckBox = new CheckBox
+      { Content   = "Auto-connect",
+        IsChecked = storedObsConnectOption };
+      var rememberObsPasswordCheckBox = new CheckBox
+      { Content = "Remember password", 
+        IsChecked = storedObsPasswordOption };
 
       var obsConnect = new Button
       { Content = "Connect", HorizontalAlignment = Windows.UI.Xaml.HorizontalAlignment.Center };
 
-      obsConnect.Click += async (s, ee) =>
+      obsConnect.Click += async (s, args) =>
       {
-        localSettings.Values["ObsIP"] = obsAddressInput.Text;
-        localSettings.Values["ObsPort"] = obsPortInput.Text;
-        localSettings.Values["ObsPassword"] = obsPasswordInput.Text;
-        await OBSConnect();
+        if (!string.IsNullOrWhiteSpace(obsPasswordInput.Password))
+        {
+          OBSPassword = obsPasswordInput.Password;
+        }
+        if (!string.IsNullOrWhiteSpace(obsAddressInput.Text))
+        {
+          OBSAddress = obsAddressInput.Text;
+        }
+        if (!string.IsNullOrWhiteSpace(obsPortInput.Text))
+        {
+          OBSPort = obsPortInput.Text;
+        }
+        
+        OBSAddress = $"{(useSSL.IsChecked ?? false ? "wss" : "ws")}://{OBSAddress}:{OBSPort}/";
+
+        await OBSConnect(OBSAddress);
       };
 
-      var oauthDialog = new ContentDialog
+      var obsDialog = new ContentDialog
       {
-        Title = "Settings",
+        Title = "OBS Settings",
         Content = new StackPanel
         {
           Children =
@@ -77,7 +117,10 @@ namespace VRCatNet
                         obsAddressInput,
                         obsPortInput,
                         obsPasswordInput,
-                        obsConnect
+                        useSSL,
+                        obsConnect,
+                        autoConnectObsCheckBox,
+                        rememberObsPasswordCheckBox
                     }
         },
         PrimaryButtonText = "OK",
@@ -85,18 +128,32 @@ namespace VRCatNet
       };
 
       // Show the dialog and update the Twitch client's OAuth key, broadcaster name, OSC address, and OSC port if provided
-      var result = await oauthDialog.ShowAsync();
+      var result = await obsDialog.ShowAsync();
 
+      if (result == ContentDialogResult.Primary)
+      {
+        if (!string.IsNullOrWhiteSpace(obsPasswordInput.Password))
+        {
+          localSettings.Values["OBSPassword"] = obsPasswordInput.Password;
+        }
+
+        localSettings.Values["OBSAddress"]  = obsAddressInput.Text;
+        localSettings.Values["OBSPort"]     = obsPortInput.Text;
+
+        localSettings.Values["SSLOption"] = useSSL.IsChecked;
+        localSettings.Values["AutoConnectOBS"] = autoConnectObsCheckBox.IsChecked;
+        localSettings.Values["RememberOBSPassword"] = rememberObsPasswordCheckBox.IsChecked;
+      }
     }
 
     private async void SceneSelector_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
     {
-      await OBSConnect();
+      //await OBSConnect(OBSAddress);
     }
 
     private async void SourceSelector_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
     {
-      await OBSConnect();
+      //await OBSConnect(OBSAddress);
     }
 
     private void obsRecordToggle_Checked(object sender, Windows.UI.Xaml.RoutedEventArgs e)
@@ -119,7 +176,7 @@ namespace VRCatNet
       SetCurrentScene("VRChatLive");
     }
 
-    private async Task OBSConnect()
+    private async Task OBSConnect(string OBSAddress)
     {
       messageWebSocket = new Windows.Networking.Sockets.MessageWebSocket();
 
@@ -135,11 +192,10 @@ namespace VRCatNet
       try
       {
         System.Diagnostics.Debug.WriteLine("In try block");
-        var connectTask = messageWebSocket.ConnectAsync(new Uri(ObsIP)).AsTask();
+        var connectTask = messageWebSocket.ConnectAsync(new Uri(OBSAddress)).AsTask();
         await connectTask;
 
-        // If we reach this line, the connection was successful
-        // Now we wait for the Hello message from the server
+        UpdateTextHistory($"Connected to OBS.\n");
       }
       catch (Exception connectEx)
       {
