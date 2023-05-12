@@ -235,6 +235,8 @@ namespace VRCatNet
       try
       {
         if (toggleTwitch.IsChecked.Value && twitchIsConnected)
+          SendStreamCaption(textInput.Text);
+
           twitchClient.SendMessage("#" + _broadcasterName, textInput.Text);
       }
       catch (TwitchLib.Client.Exceptions.BadStateException ex)

@@ -37,7 +37,7 @@ namespace VRCatNet
       string storedOBSAddress, storedObsPort, storedObsPassword;
       bool storedSSLOption, storedObsConnectOption, storedObsPasswordOption;
 
-      if (localSettings.Values.TryGetValue("OBSAdress", out object obsAddress))
+      if (localSettings.Values.TryGetValue("OBSAddress", out object obsAddress))
         storedOBSAddress = obsAddress as string;
       else
         storedOBSAddress = null;
@@ -148,6 +148,7 @@ namespace VRCatNet
 
     private async void SceneSelector_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
     {
+      RequestScenes();
       //await OBSConnect(OBSAddress);
     }
 
@@ -267,7 +268,12 @@ namespace VRCatNet
           if (message.op == 2)
           {
 
-            Debug.WriteLine("Got message using MessageWebSocket: " + message);
+            Debug.WriteLine("Got message using MessageWebSocket: " + messageString);
+          }
+
+          if(message.op == 7)
+          {
+            Debug.WriteLine("Got message using MessageWebSocket: " + messageString);
           }
 
         }
@@ -280,6 +286,29 @@ namespace VRCatNet
       {
         Debug.WriteLine(ex.ToString());
       }
+    }
+
+    private async void SendStreamCaption(string caption)
+    {
+      string requestId = Guid.NewGuid().ToString();
+
+      var request = new
+      {
+        op = 6,
+        d = new
+        {
+          requestType = "SendStreamCaption",
+          requestId = requestId,
+          requestData = new
+          {
+            captionText = caption
+          }
+        }
+      };
+      // Convert the request to JSON
+      var requestJson = JsonConvert.SerializeObject(request);
+      // Send the request
+      await SendMessageUsingMessageWebSocketAsync(requestJson);
     }
 
     private async void SetCurrentScene(string scene)
@@ -321,7 +350,30 @@ namespace VRCatNet
         return;
       }
     }
-    
+   
+    private async void RequestScenes()
+    {
+      // Create a new UUID for the request
+      string requestId = Guid.NewGuid().ToString();
+
+      // Create the request
+      var request = new
+      {
+        op = 6,
+        d = new
+        {
+          requestType = "GetSceneList",
+          requestId = requestId
+        }
+      };
+
+      // Convert the request to JSON
+      var requestJson = JsonConvert.SerializeObject(request);
+
+      // Send the request
+      await SendMessageUsingMessageWebSocketAsync(requestJson);
+    }
+
     private void WebSocket_Closed(Windows.Networking.Sockets.IWebSocket sender, Windows.Networking.Sockets.WebSocketClosedEventArgs args)
     {
       // You can add code to log or display the code and reason
