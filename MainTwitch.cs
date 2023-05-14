@@ -86,6 +86,12 @@ namespace VRCatNet
       var changeChannel = new Button
       { Content = "Change Channel", HorizontalAlignment = HorizontalAlignment.Right };
 
+      var newChannelInput1 = new TextBox
+      { PlaceholderText="Channel Name", Text = storedAltChannel, HorizontalAlignment = Windows.UI.Xaml.HorizontalAlignment.Center };
+
+      var changeChannel1 = new Button
+      { Content = "Change Channel", HorizontalAlignment = HorizontalAlignment.Right };
+
       var resetChannel = new Button
       { Content = "Reset", HorizontalAlignment = HorizontalAlignment.Left };
 
