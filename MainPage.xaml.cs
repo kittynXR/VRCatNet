@@ -67,7 +67,7 @@ namespace VRCatNet
       audioEnabled = false;
     }
 
-    protected override async void OnNavigatedTo(NavigationEventArgs e)
+    protected override void OnNavigatedTo(NavigationEventArgs e)
     {
       try
       {

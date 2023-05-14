@@ -171,7 +171,7 @@ namespace VRCatNet
       }
     }
 
-    private async void SceneSelector_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
+    private void SceneSelector_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
     {
       if (!OBSIsConnected) return;
 
@@ -242,7 +242,7 @@ namespace VRCatNet
       return grid;
     }
 
-    private async void SourceSelector_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
+    private void SourceSelector_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
     {
       if (!OBSIsConnected) return;
 
@@ -266,7 +266,7 @@ namespace VRCatNet
       //SetCurrentScene("Record");
     }
 
-    private async void VrCat_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
+    private void VrCat_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
     {
       if (!OBSIsConnected) return;
       //SetCurrentScene("VRChatLive");
