@@ -1,28 +1,47 @@
 ﻿using Microsoft.CSharp.RuntimeBinder;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading.Tasks;
 using Windows.Storage;
 using Windows.Storage.Streams;
 using Windows.System;
 using Windows.UI;
 using Windows.UI.Core;
+using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
+using Windows.UI.Xaml.Controls.Primitives;
 using Windows.UI.Xaml.Media;
 
 namespace VRCatNet
 {
+  public class ScenesData
+  {
+    public string currentPreviewSceneName { get; set; }
+    public string currentProgramSceneName { get; set; }
+    public List<Scene> scenes { get; set; }
+  }
+
+  public class Scene
+  {
+    public int sceneIndex { get; set; }
+    public string sceneName { get; set; }
+  }
+
   public sealed partial class MainPage : Page
   {
     private Windows.Networking.Sockets.MessageWebSocket messageWebSocket;
+    public Grid SceneGrid { get; set; }
 
     private void InitializeObs()
     {
-      sceneSelector.Click           += SceneSelector_Click;
-      sourceSelector.Click          += SourceSelector_Click;
-      obsConfig.Click               += ObsConfig_Click;
-      vrCat.Click                   += VrCat_Click;
+      sceneSelector.Click += SceneSelector_Click;
+      sourceSelector.Click += SourceSelector_Click;
+      obsConfig.Click += ObsConfig_Click;
+      vrCat.Click += VrCat_Click;
+
       //obsRecordToggle.Click         += ObsRecordToggle_Click;
     }
 
@@ -52,7 +71,7 @@ namespace VRCatNet
       else
         storedObsPassword = null;
 
-      if(localSettings.Values.TryGetValue("SSLOption", out object useSSLOption))
+      if (localSettings.Values.TryGetValue("SSLOption", out object useSSLOption))
         storedSSLOption = (bool)useSSLOption;
       else
         storedSSLOption = false;
@@ -67,22 +86,28 @@ namespace VRCatNet
       else
         storedObsPasswordOption = false;
 
-      var obsAddressInput  = new TextBox
-      { PlaceholderText    = "OBS WS address: default ⇾ 127.0.0.1", Text = storedOBSAddress ?? "" };
-      var obsPortInput     = new TextBox
-      { PlaceholderText    = "OBS WS port: default ⇾ 4455", Text = storedObsPort ?? "" };
+      var obsAddressInput = new TextBox
+      { PlaceholderText = "OBS WS address: default ⇾ 127.0.0.1", Text = storedOBSAddress ?? "" };
+      var obsPortInput = new TextBox
+      { PlaceholderText = "OBS WS port: default ⇾ 4455", Text = storedObsPort ?? "" };
       var obsPasswordInput = new PasswordBox
-      { PlaceholderText    = "OBS password: default ⇾ [none]", Password = storedObsPassword ?? "" };
+      { PlaceholderText = "OBS password: default ⇾ [none]", Password = storedObsPassword ?? "" };
 
       var useSSL = new CheckBox
-      { Content = "Use SSL",
-        IsChecked = storedSSLOption };
+      {
+        Content = "Use SSL",
+        IsChecked = storedSSLOption
+      };
       var autoConnectObsCheckBox = new CheckBox
-      { Content   = "Auto-connect",
-        IsChecked = storedObsConnectOption };
+      {
+        Content = "Auto-connect",
+        IsChecked = storedObsConnectOption
+      };
       var rememberObsPasswordCheckBox = new CheckBox
-      { Content = "Remember password", 
-        IsChecked = storedObsPasswordOption };
+      {
+        Content = "Remember password",
+        IsChecked = storedObsPasswordOption
+      };
 
       var obsConnect = new Button
       { Content = "Connect", HorizontalAlignment = Windows.UI.Xaml.HorizontalAlignment.Center };
@@ -101,7 +126,7 @@ namespace VRCatNet
         {
           OBSPort = obsPortInput.Text;
         }
-        
+
         OBSAddress = $"{(useSSL.IsChecked ?? false ? "wss" : "ws")}://{OBSAddress}:{OBSPort}/";
 
         await OBSConnect(OBSAddress);
@@ -137,8 +162,8 @@ namespace VRCatNet
           localSettings.Values["OBSPassword"] = obsPasswordInput.Password;
         }
 
-        localSettings.Values["OBSAddress"]  = obsAddressInput.Text;
-        localSettings.Values["OBSPort"]     = obsPortInput.Text;
+        localSettings.Values["OBSAddress"] = obsAddressInput.Text;
+        localSettings.Values["OBSPort"] = obsPortInput.Text;
 
         localSettings.Values["SSLOption"] = useSSL.IsChecked;
         localSettings.Values["AutoConnectOBS"] = autoConnectObsCheckBox.IsChecked;
@@ -148,33 +173,103 @@ namespace VRCatNet
 
     private async void SceneSelector_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
     {
+      if (!OBSIsConnected) return;
+
       RequestScenes();
       //await OBSConnect(OBSAddress);
     }
 
+    private async void SceneSelector(string scenesString)
+    {
+      var scenesData = JsonConvert.DeserializeObject<ScenesData>(scenesString);
+      await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () =>
+      {
+        var dialog = new ContentDialog
+        {
+          Title = "Select Scene",
+          Content = new ScrollViewer
+          {
+            Content = GenerateGrid(scenesData),
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto
+          },
+          PrimaryButtonText = "Close"
+        };
+
+        await dialog.ShowAsync();
+      });
+    }
+
+    private Grid GenerateGrid(ScenesData scenesData)
+    {
+      var grid = new Grid();
+
+      for (var i = 0; i < scenesData.scenes.Count; i++)
+      {
+        grid.RowDefinitions.Add(new RowDefinition());
+      }
+
+      for (var i = 0; i < 3; i++)
+      {
+        grid.ColumnDefinitions.Add(new ColumnDefinition());
+      }
+
+      for (var i = 0; i < scenesData.scenes.Count; i++)
+      {
+        var button = new ToggleButton
+        {
+          Content = scenesData.scenes[i].sceneName,
+          IsChecked = scenesData.scenes[i].sceneName == scenesData.currentProgramSceneName
+        };
+
+        button.Checked += (sender, args) =>
+        {
+          foreach (var child in grid.Children.OfType<ToggleButton>())
+          {
+            if (child != sender)
+            {
+              child.IsChecked = false;
+            }
+          }
+          SetCurrentScene(((ToggleButton)sender).Content.ToString());
+        };
+
+        grid.Children.Add(button);
+        Grid.SetRow(button, i / 3);
+        Grid.SetColumn(button, i % 3);
+      }
+
+      return grid;
+    }
+
     private async void SourceSelector_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
     {
+      if (!OBSIsConnected) return;
+
       //await OBSConnect(OBSAddress);
     }
 
     private void obsRecordToggle_Checked(object sender, Windows.UI.Xaml.RoutedEventArgs e)
     {
-      SetCurrentScene("Record");
+      if (!OBSIsConnected) return;
+
     }
 
     private void obsRecordToggle_Unchecked(object sender, Windows.UI.Xaml.RoutedEventArgs e)
     {
-      SetCurrentScene("Record");
+      if (!OBSIsConnected) return;
+
     }
 
     private void ObsRecordToggle_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
     {
-      SetCurrentScene("Record");
+      //SetCurrentScene("Record");
     }
 
     private async void VrCat_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
     {
-      SetCurrentScene("VRChatLive");
+      if (!OBSIsConnected) return;
+      //SetCurrentScene("VRChatLive");
     }
 
     private async Task OBSConnect(string OBSAddress)
@@ -196,6 +291,7 @@ namespace VRCatNet
         var connectTask = messageWebSocket.ConnectAsync(new Uri(OBSAddress)).AsTask();
         await connectTask;
 
+        OBSIsConnected = true;
         UpdateTextHistory($"Connected to OBS.\n");
       }
       catch (Exception connectEx)
@@ -211,7 +307,7 @@ namespace VRCatNet
 
       // Enable the General category
       eventSubscriptions |= (1 << 0); // This is equivalent to eventSubscriptions = eventSubscriptions | 1;
-      
+
       // Enable the Scenes category
       eventSubscriptions |= (1 << 2); // This is equivalent to eventSubscriptions = eventSubscriptions |
 
@@ -271,8 +367,12 @@ namespace VRCatNet
             Debug.WriteLine("Got message using MessageWebSocket: " + messageString);
           }
 
-          if(message.op == 7)
+          if (message.op == 7)
           {
+            if (message.d.requestType == "GetSceneList")
+            {
+              SceneSelector(JsonConvert.SerializeObject(message.d.responseData));
+            }
             Debug.WriteLine("Got message using MessageWebSocket: " + messageString);
           }
 
@@ -290,6 +390,9 @@ namespace VRCatNet
 
     private async void SendStreamCaption(string caption)
     {
+      if (caption == null) return;
+      if (!OBSIsConnected) return;
+
       string requestId = Guid.NewGuid().ToString();
 
       var request = new
@@ -350,7 +453,7 @@ namespace VRCatNet
         return;
       }
     }
-   
+
     private async void RequestScenes()
     {
       // Create a new UUID for the request
@@ -385,6 +488,7 @@ namespace VRCatNet
       // 1013 - server is overloaded
       // 1014 - server refuses handshake
       // 1015 - TLS or SSL error
+      OBSIsConnected = false;
       Debug.WriteLine("WebSocket_Closed; Code: " + args.Code + ", Reason: \"" + args.Reason + "\"");
       // Add additional code here to handle the WebSocket being closed.
     }

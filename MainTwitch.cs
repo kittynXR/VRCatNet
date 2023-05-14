@@ -20,12 +20,21 @@ namespace VRCatNet
 {
   public sealed partial class MainPage : Page
   {
+    private TwitchClient twitchClient;
+
+    private string currentChannel;
+    private string _broadcasterName;
+    private bool twitchIsConnected;
+
     private async Task InitializeTwitchClient()
     {
       var localSettings = ApplicationData.Current.LocalSettings;
       var storedOAuthKey = localSettings.Values["OAuthKey"] as string;
       var broadcasterName = localSettings.Values["BroadcasterName"] as string;
-      newChatButton.Click           += NewChatButton_Click;
+      _broadcasterName = localSettings.Values["BroadcasterName"] as string;
+      currentChannel = _broadcasterName;
+
+      changeChannels.Click          += ChangeChannels_Click;
       dropGame.Click                += DropGame_Click;
       ttvPoints.Click               += TtvPoints_Click;
       twitchPrediction.Click        += TwitchPrediction_Click;
@@ -61,27 +70,152 @@ namespace VRCatNet
       }
     }
 
-    private async void NewChatButton_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
+    private async void ChangeChannels_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
     {
+      var localSettings = ApplicationData.Current.LocalSettings;
+      string storedAltChannel;
+
+      if (localSettings.Values.TryGetValue("AltChannel", out object altChannel))
+        storedAltChannel = altChannel as string;
+      else
+        storedAltChannel = _broadcasterName;
+
+      var newChannelInput = new TextBox
+      { PlaceholderText="Channel Name", Text = storedAltChannel, HorizontalAlignment = Windows.UI.Xaml.HorizontalAlignment.Center };
+
+      var changeChannel = new Button
+      { Content = "Change Channel", HorizontalAlignment = HorizontalAlignment.Right };
+
+      var resetChannel = new Button
+      { Content = "Reset", HorizontalAlignment = HorizontalAlignment.Left };
+
+      changeChannel.Click += async (s, args) =>
+      {
+        if (twitchClient != null)
+        {
+          await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+          {
+            twitchClient.LeaveChannel(currentChannel);
+            Task.Delay(TimeSpan.FromSeconds(1));
+            twitchClient.JoinChannel(newChannelInput.Text);
+          });
+          currentChannel = storedAltChannel;
+        }
+      };
+
+      resetChannel.Click += async (s, args) =>
+      {
+        if (twitchClient != null)
+        {
+          await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+          {
+            twitchClient.LeaveChannel(currentChannel);
+            Task.Delay(TimeSpan.FromSeconds(1));
+            twitchClient.JoinChannel(_broadcasterName);
+          });
+          currentChannel = _broadcasterName;
+        }
+      };
+
+      var changeChannelDialog = new ContentDialog
+      {
+        Title = "Change Twitch Channel",
+        Content = new StackPanel
+        {
+          Children =
+        {
+            newChannelInput,
+            new Grid // Use Grid instead of StackPanel
+            {
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                Children =
+                {
+                  resetChannel,
+                    changeChannel
+                }
+            }
+        }
+        },
+        PrimaryButtonText = "Close"
+      };
+
+      // Show the dialog and update the Twitch client's OAuth key, broadcaster name, OSC address, and OSC port if provided
+      var result = await changeChannelDialog.ShowAsync();
+
+      if (result == ContentDialogResult.Primary)
+      {
+        if (!string.IsNullOrWhiteSpace(newChannelInput.Text))
+        {
+          localSettings.Values["AltChannel"] = newChannelInput.Text;
+        }
+      }
     }
 
     private async void DropGame_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
     {
+      var dropDialog = new ContentDialog();
+
+      var pizzaBtn = new Button
+      { Content = "pineapple", HorizontalAlignment = Windows.UI.Xaml.HorizontalAlignment.Center };
+
+      pizzaBtn.Click += (s, args) =>
+      {
+        textInput.Text = "!drop luunavrPizza";
+        SendMessage();
+        dropDialog.Hide();
+        textInput.Focus(FocusState.Programmatic);
+      };
+
+      var cuteBtn = new Button
+      { Content = "ucute", HorizontalAlignment = Windows.UI.Xaml.HorizontalAlignment.Center };
+
+      cuteBtn.Click += (s, args) =>
+      {
+        textInput.Text = "!drop kittyn9Ucute";
+        SendMessage();
+        dropDialog.Hide();
+        textInput.Focus(FocusState.Programmatic);
+      };
+
+      var derpBtn = new Button
+      { Content = "derp", HorizontalAlignment = Windows.UI.Xaml.HorizontalAlignment.Center };
+
+      derpBtn.Click += (s, args) =>
+      {
+        textInput.Text = "!drop totsDerp";
+        SendMessage();
+        dropDialog.Hide();
+        textInput.Focus(FocusState.Programmatic);
+      };
+
+      dropDialog.Title = "Chat Games";
+      dropDialog.Content = new StackPanel
+      {
+          Children =
+                    {
+                      pizzaBtn,
+                      cuteBtn,
+                      derpBtn
+                    },
+      };
+      dropDialog.PrimaryButtonText = "Close";
+
+      var result = await dropDialog.ShowAsync();
     }
 
-    private async void TtvPoints_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
+    private void TtvPoints_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
     {
     }
 
-    private async void TwitchPrediction_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
+    private void TwitchPrediction_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
     {
     }
 
-    private async void TwitchPoll_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
+    private void TwitchPoll_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
     {
     }
 
-    private async Task ShutdownTwitchClient()
+    private void ShutdownTwitchClient()
     {
       twitchClient.OnMessageSent -= TwitchClient_OnMessageSent;
       twitchClient.OnMessageReceived -= TwitchClient_OnMessageReceived;
@@ -101,7 +235,7 @@ namespace VRCatNet
     {
       TaskCompletionSource<bool> tcs = new TaskCompletionSource<bool>();
 
-      async void OnConnected(object sender, OnConnectedArgs e)
+      void OnConnected(object sender, OnConnectedArgs e)
       {
         twitchClient.OnConnected -= OnConnected;
         tcs.SetResult(true);
@@ -152,6 +286,7 @@ namespace VRCatNet
           () =>
           {
             UpdateTextHistory($"Joined channel: {e.Channel}\n");
+            currentChannel = e.Channel;
             //sendButton.IsEnabled = true;
             ScrollToBottom();
           });
@@ -199,7 +334,7 @@ namespace VRCatNet
       }
     }
 
-    private async void TwitchClient_OnMessageSent(object sender, OnMessageSentArgs e)
+    private void TwitchClient_OnMessageSent(object sender, OnMessageSentArgs e)
     {
       return;
     }

@@ -36,8 +36,6 @@ namespace VRCatNet
     private const int OscPort = 9000;
     private const string OscIP = "127.0.0.1";
 
-
-
     public static readonly DependencyProperty MaxCharactersProperty =
         DependencyProperty.Register("MaxCharacters", typeof(int), typeof(MainPage), new PropertyMetadata(500));
 
@@ -45,17 +43,13 @@ namespace VRCatNet
 
     private readonly SemaphoreSlim uiSemaphore = new SemaphoreSlim(1, 1);
     private bool audioEnabled;
-    private bool twitchIsConnected;
+    private bool OBSIsConnected;
     private bool isSendingMessage;
     private bool messageSentByApp;
 
     private UDPSender oscSender;
     private bool pauseScroll;
 
-    private string _broadcasterName;
-
-
-    private TwitchClient twitchClient;
 
     private Dictionary<string, BitmapImage> _emoteCache = new Dictionary<string, BitmapImage>();
 
@@ -66,7 +60,6 @@ namespace VRCatNet
       InitializeObs();
 
       var localSettings = ApplicationData.Current.LocalSettings;
-      _broadcasterName = localSettings.Values["BroadcasterName"] as string;
 
       toggleTyping.UpdateButtonColor();
 
@@ -92,7 +85,7 @@ namespace VRCatNet
 
     private void OscTriggers_Click(object sender, RoutedEventArgs e)
     {
-      throw new NotImplementedException();
+      //throw new NotImplementedException();
     }
 
     public int MaxCharacters
@@ -235,9 +228,10 @@ namespace VRCatNet
       try
       {
         if (toggleTwitch.IsChecked.Value && twitchIsConnected)
+        {
           SendStreamCaption(textInput.Text);
-
-          twitchClient.SendMessage("#" + _broadcasterName, textInput.Text);
+          twitchClient.SendMessage("#" + currentChannel, textInput.Text);
+        }
       }
       catch (TwitchLib.Client.Exceptions.BadStateException ex)
       {

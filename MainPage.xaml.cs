@@ -46,16 +46,6 @@ namespace VRCatNet
       textInput.Focus(FocusState.Programmatic);
     }
     
-    private void SceneChange1_Click(object sender, RoutedEventArgs e)
-    {
-      SetCurrentScene("BRB rq");
-    }
-
-    private void SceneChange2_Click(object sender, RoutedEventArgs e)
-    {
-      SetCurrentScene("Art Stream");
-    }
-
     private void ChatElementControl_Loaded(object sender, RoutedEventArgs e)
     {
       var chatElementControl = sender as ChatElementControl;
@@ -113,18 +103,13 @@ namespace VRCatNet
         }
       else
       {
-        await ShutdownTwitchClient();
+        ShutdownTwitchClient();
         twitchIsConnected = false;
         UpdateTextHistory("TTV Disconnected. . .");
         initTwitchButton.Content = "Connect TTV";
       }
 
       textInput.Focus(FocusState.Programmatic);
-    }
-
-    private async void discTwitchButton_Click(object sender, RoutedEventArgs e)
-    {
-
     }
 
     private void textInput_TextChanged(object sender, TextChangedEventArgs e)
