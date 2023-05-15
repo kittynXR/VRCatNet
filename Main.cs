@@ -83,6 +83,7 @@ namespace VRCatNet
       UpdateCharacterCounter();
     }
 
+
     private void OscTriggers_Click(object sender, RoutedEventArgs e)
     {
       //throw new NotImplementedException();

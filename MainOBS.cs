@@ -1,5 +1,6 @@
 ﻿using Microsoft.CSharp.RuntimeBinder;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -28,20 +29,55 @@ namespace VRCatNet
   {
     public int sceneIndex { get; set; }
     public string sceneName { get; set; }
+    public bool isSelected { get; set; }
+  }
+
+  public class SourcesData
+  {
+    public List<Source> sceneItems { get; set; }
+  }
+
+  public class Source
+  {
+    public bool sceneItemEnabled { get; set; }
+    public int sceneItemId { get; set; }
+    public int sceneitemIndex { get; set; }
+    public bool sceneItemLocked { get; set; }
+    public string sourceName { get; set; }
   }
 
   public sealed partial class MainPage : Page
   {
     private Windows.Networking.Sockets.MessageWebSocket messageWebSocket;
     public Grid SceneGrid { get; set; }
+    public Grid SourceGrid { get; set; }
+    public StackPanel stackPanel { get; set; }
+
+    private bool obsAutoConnect = false;
+    private string selectedSceneName;
+    public delegate void SourcesDataReceivedHandler(string sourcesString);
+
+    public event SourcesDataReceivedHandler OnSourcesDataReceived;
 
     private void InitializeObs()
     {
+      var localSettings = ApplicationData.Current.LocalSettings;
       sceneSelector.Click += SceneSelector_Click;
-      sourceSelector.Click += SourceSelector_Click;
+      //sourceSelector.Click += SourceSelector_Click;
       obsConfig.Click += ObsConfig_Click;
       vrCat.Click += VrCat_Click;
 
+      if (localSettings.Values.TryGetValue("AutoConnectOBS", out object obsConnectOption))
+        obsAutoConnect = (bool)obsConnectOption;
+
+      if (obsAutoConnect)
+      {
+        string OBSAddress = "127.0.0.1";
+        if (localSettings.Values.TryGetValue("OBSAddress", out object obsAddress))
+          OBSAddress = obsAddress as string;
+
+        //await OBSConnect(OBSAddress);
+      }
       //obsRecordToggle.Click         += ObsRecordToggle_Click;
     }
 
@@ -182,25 +218,51 @@ namespace VRCatNet
     private async void SceneSelector(string scenesString)
     {
       var scenesData = JsonConvert.DeserializeObject<ScenesData>(scenesString);
-      await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () =>
+
+      await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
       {
+        stackPanel = new StackPanel();
+        var sceneGrid = GenerateGrid(scenesData);
+        stackPanel.Children.Add(sceneGrid);
+
         var dialog = new ContentDialog
         {
-          Title = "Select Scene",
+          Title = "Select Scene and Source",
           Content = new ScrollViewer
           {
-            Content = GenerateGrid(scenesData),
+            Content = stackPanel,
             HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
             VerticalScrollBarVisibility = ScrollBarVisibility.Auto
           },
           PrimaryButtonText = "Close"
         };
 
-        await dialog.ShowAsync();
+        OnSourcesDataReceived += async (sourcesString) =>
+        {
+          // Deserialize the sources data
+          var sourcesData = JsonConvert.DeserializeObject<SourcesData>(sourcesString);
+
+          await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () =>
+          {
+            // Check if the sources grid already exists
+            if (SourceGrid == null)
+            {
+              SourceGrid = await GenerateSourcesGridAsync(sourcesData);
+              stackPanel.Children.Add(SourceGrid);
+            }
+            else
+            {
+              // Update the sources grid
+              await UpdateSourcesGridAsync(sourcesData);
+            }
+          });
+        };
+
+        dialog.ShowAsync().AsTask().GetAwaiter();
       });
     }
 
-    private Grid GenerateGrid(ScenesData scenesData)
+    private Grid GenerateGrid(ScenesData scenesData, SourcesData sourcesData = null)
     {
       var grid = new Grid();
 
@@ -222,8 +284,10 @@ namespace VRCatNet
           IsChecked = scenesData.scenes[i].sceneName == scenesData.currentProgramSceneName
         };
 
-        button.Checked += (sender, args) =>
+        button.Checked += async (sender, args) =>
         {
+          Console.WriteLine("Button checked event triggered");
+
           foreach (var child in grid.Children.OfType<ToggleButton>())
           {
             if (child != sender)
@@ -231,8 +295,16 @@ namespace VRCatNet
               child.IsChecked = false;
             }
           }
-          SetCurrentScene(((ToggleButton)sender).Content.ToString());
+
+          selectedSceneName = ((ToggleButton)sender).Content.ToString();
+          SetCurrentScene(selectedSceneName);
+
+          Debug.WriteLine("About to call RequestSources");
+          // Retrieve sources for the selected scene
+          await RequestSources(selectedSceneName);
+          Debug.WriteLine("RequestSources method called");
         };
+
 
         grid.Children.Add(button);
         Grid.SetRow(button, i / 3);
@@ -242,11 +314,100 @@ namespace VRCatNet
       return grid;
     }
 
-    private void SourceSelector_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
+    private async Task UpdateSourcesGridAsync(SourcesData newSourcesData)
     {
-      if (!OBSIsConnected) return;
+      await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+      {
+        // Assuming SourceGrid is a class member variable
+        SourceGrid.Children.Clear();
+        SourceGrid.RowDefinitions.Clear();
+        SourceGrid.ColumnDefinitions.Clear();
 
-      //await OBSConnect(OBSAddress);
+        for (var i = 0; i < newSourcesData.sceneItems.Count; i++)
+        {
+          SourceGrid.RowDefinitions.Add(new RowDefinition());
+        }
+
+        for (var i = 0; i < 3; i++)
+        {
+          SourceGrid.ColumnDefinitions.Add(new ColumnDefinition());
+        }
+
+        for (var i = 0; i < newSourcesData.sceneItems.Count; i++)
+        {
+          var toggleButton = new ToggleButton
+          {
+            Content = newSourcesData.sceneItems[i].sourceName,
+            IsChecked = newSourcesData.sceneItems[i].sceneItemEnabled == true
+          };
+
+          toggleButton.Checked += (sender, args) =>
+          {
+            SetSourceState(selectedSceneName, newSourcesData.sceneItems[i].sceneItemId, true);
+          };
+
+          toggleButton.Unchecked += (sender, args) =>
+          {
+            SetSourceState(selectedSceneName, newSourcesData.sceneItems[i].sceneItemId, false);
+          };
+
+          SourceGrid.Children.Add(toggleButton);
+          Grid.SetRow(toggleButton, i / 3);
+          Grid.SetColumn(toggleButton, i % 3);
+        }
+      });
+    }
+
+    private async Task<Grid> GenerateSourcesGridAsync(SourcesData sourcesData)
+    {
+      if(sourcesData == null)
+      {
+        Debug.WriteLine("sourcesData is null");
+        return null;
+      }
+      var tcs = new TaskCompletionSource<Grid>();
+
+      await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+      {
+        var grid = new Grid();
+
+        for (var i = 0; i < sourcesData.sceneItems.Count; i++)
+        {
+          grid.RowDefinitions.Add(new RowDefinition());
+        }
+
+        for (var i = 0; i < 3; i++)
+        {
+          grid.ColumnDefinitions.Add(new ColumnDefinition());
+        }
+
+        for (var i = 0; i < sourcesData.sceneItems.Count; i++)
+        {
+          var toggleButton = new ToggleButton
+          {
+            Content = sourcesData.sceneItems[i].sourceName,
+            IsChecked = sourcesData.sceneItems[i].sceneItemEnabled == true
+          };
+
+          toggleButton.Checked += (sender, args) =>
+          {
+            SetSourceState(selectedSceneName, sourcesData.sceneItems[i].sceneItemId, true);
+          };
+
+          toggleButton.Unchecked += (sender, args) =>
+          {
+            SetSourceState(selectedSceneName, sourcesData.sceneItems[i].sceneItemId, false);
+          };
+
+          grid.Children.Add(toggleButton);
+          Grid.SetRow(toggleButton, i / 3);
+          Grid.SetColumn(toggleButton, i % 3);
+        }
+
+        tcs.SetResult(grid);
+      });
+
+      return await tcs.Task;
     }
 
     private void obsRecordToggle_Checked(object sender, Windows.UI.Xaml.RoutedEventArgs e)
@@ -311,6 +472,8 @@ namespace VRCatNet
       // Enable the Scenes category
       eventSubscriptions |= (1 << 2); // This is equivalent to eventSubscriptions = eventSubscriptions |
 
+      eventSubscriptions |= (1 << 7);
+
       try
       {
         using (DataReader reader = args.GetDataReader())
@@ -369,10 +532,21 @@ namespace VRCatNet
 
           if (message.op == 7)
           {
-            if (message.d.requestType == "GetSceneList")
+            if ((message.d.requestType == "GetSceneList") && (message.d.responseData != null))
             {
               SceneSelector(JsonConvert.SerializeObject(message.d.responseData));
             }
+            if ((message.d.requestType == "GetSceneItemList") && (message.d.responseData != null))
+            {
+              //var jObject = JObject.Parse(JsonConvert.SerializeObject(message.d.responseData));
+              //var sceneItems = jObject["sceneItems"] as IEnumerable<JToken>;
+              //var sourceNames = sceneItems.Select(item => item["sourceName"].ToString()).ToList();
+              //Debug.WriteLine("Got message using MessageWebSocket: " + JsonConvert.SerializeObject(sourceNames));
+              //OnSourcesDataReceived?.Invoke(JsonConvert.SerializeObject(sourceNames));
+              OnSourcesDataReceived?.Invoke(JsonConvert.SerializeObject(message.d.responseData));
+            }
+
+
             Debug.WriteLine("Got message using MessageWebSocket: " + messageString);
           }
 
@@ -446,6 +620,43 @@ namespace VRCatNet
       await SendMessageUsingMessageWebSocketAsync(requestJson);
     }
 
+    private async void SetSourceState(string scene, int source, bool sourceState)
+    {
+      if (scene == null)
+      {
+        return;
+      }
+
+      // Create a new UUID for the request
+      string requestId = Guid.NewGuid().ToString();
+
+      // Determine the requestType based on addSource
+      string requestType = "SetSceneItemEnabled";
+
+      // Create the request
+      var request = new
+      {
+        op = 6,
+        d = new
+        {
+          requestType = requestType,
+          requestId = requestId,
+          requestData = new
+          {
+            sceneName = scene,
+            sourceId = source,
+            sceneItemEnabled = sourceState
+          }
+        }
+      };
+
+      // Convert the request to JSON
+      var requestJson = JsonConvert.SerializeObject(request);
+
+      // Send the request
+      await SendMessageUsingMessageWebSocketAsync(requestJson);
+    }
+
     private void GetCurrentScene(string scene)
     {
       if (scene == null)
@@ -467,6 +678,33 @@ namespace VRCatNet
         {
           requestType = "GetSceneList",
           requestId = requestId
+        }
+      };
+
+      // Convert the request to JSON
+      var requestJson = JsonConvert.SerializeObject(request);
+
+      // Send the request
+      await SendMessageUsingMessageWebSocketAsync(requestJson);
+    }
+
+    private async Task RequestSources(string sceneName)
+    {
+      // Create a new UUID for the request
+      string requestId = Guid.NewGuid().ToString();
+
+      // Create the request
+      var request = new
+      {
+        op = 6,
+        d = new
+        {
+          requestType = "GetSceneItemList",
+          requestId = requestId,
+          requestData = new
+          {
+            sceneName = sceneName
+          }
         }
       };
 
