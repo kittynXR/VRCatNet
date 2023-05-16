@@ -34,6 +34,17 @@ namespace VRCatNet
   /// </summary>
   public sealed partial class MainPage : Page
   {
+    private void makeClip_Click(object sender, RoutedEventArgs e)
+    {
+      if(OBSIsConnected && OBSReplayEnabled)
+      {
+        ObsRequest("SaveReplayBuffer");
+      }
+      if(twitchIsConnected && twitchFullAuth)
+      {
+        // TODO:  make this a function
+      }
+    }
     private void gButton_Click(object sender, RoutedEventArgs e)
     {
       if (!isSendingMessage)

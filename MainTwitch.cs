@@ -25,6 +25,7 @@ namespace VRCatNet
     private string currentChannel;
     private string _broadcasterName;
     private bool twitchIsConnected;
+    private bool twitchFullAuth;
     private bool twitchAutoConnect;
 
     private async Task InitializeTwitchClient()
@@ -51,15 +52,15 @@ namespace VRCatNet
           twitchClient.Initialize(credentials, _broadcasterName);
 
           // Subscribe to relevant events
-          twitchClient.OnMessageSent += TwitchClient_OnMessageSent;
-          twitchClient.OnMessageReceived += TwitchClient_OnMessageReceived;
-          twitchClient.OnConnected += TwitchClient_OnConnected;
-          twitchClient.OnDisconnected += TwitchClient_OnDisconnected;
-          twitchClient.OnJoinedChannel += TwitchClient_OnJoinedChannel;
-          twitchClient.OnLeftChannel += TwitchClient_OnLeftChannel;
+          twitchClient.OnMessageSent      += TwitchClient_OnMessageSent;
+          twitchClient.OnMessageReceived  += TwitchClient_OnMessageReceived;
+          twitchClient.OnConnected        += TwitchClient_OnConnected;
+          twitchClient.OnDisconnected     += TwitchClient_OnDisconnected;
+          twitchClient.OnJoinedChannel    += TwitchClient_OnJoinedChannel;
+          twitchClient.OnLeftChannel      += TwitchClient_OnLeftChannel;
 
-          twitchClient.OnConnectionError += TwitchClient_OnConnectionError;
-          twitchClient.OnReconnected += TwitchClient_OnReconnected;
+          twitchClient.OnConnectionError  += TwitchClient_OnConnectionError;
+          twitchClient.OnReconnected      += TwitchClient_OnReconnected;
 
           // Connect to Twitch
           if (twitchClient != null) await ConnectTwitchClientAsync(twitchClient);
@@ -71,46 +72,67 @@ namespace VRCatNet
       }
     }
 
+    private void ToggleTwitchButtonState(bool btnState)
+    {
+      ttvPoints.IsEnabled = btnState;
+      toggleTwitch.IsEnabled = btnState;
+      makeClip.IsEnabled = btnState;
+      changeChannels.IsEnabled = btnState;
+      dropGame.IsEnabled = btnState;
+      gButton.IsEnabled = btnState;
+
+      if(twitchFullAuth)
+      {
+        twitchPrediction.IsEnabled = btnState;
+        twitchPoll.IsEnabled = btnState;
+      }
+    }
+
     private async void ChangeChannels_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
     {
       var localSettings = ApplicationData.Current.LocalSettings;
-      string storedAltChannel;
+      string[] storedAltChannels = new string[5];
+      TextBox[] newChannelInputs = new TextBox[5];
+      Button[] changeButtons = new Button[5];
+      Button resetButton = new Button { Content = "Reset", HorizontalAlignment = HorizontalAlignment.Left };
 
-      if (localSettings.Values.TryGetValue("AltChannel", out object altChannel))
-        storedAltChannel = altChannel as string;
-      else
-        storedAltChannel = _broadcasterName;
-
-      var newChannelInput = new TextBox
-      { PlaceholderText="Channel Name", Text = storedAltChannel, HorizontalAlignment = Windows.UI.Xaml.HorizontalAlignment.Center };
-
-      var changeChannel = new Button
-      { Content = "Change Channel", HorizontalAlignment = HorizontalAlignment.Right };
-
-      var newChannelInput1 = new TextBox
-      { PlaceholderText="Channel Name", Text = storedAltChannel, HorizontalAlignment = Windows.UI.Xaml.HorizontalAlignment.Center };
-
-      var changeChannel1 = new Button
-      { Content = "Change Channel", HorizontalAlignment = HorizontalAlignment.Right };
-
-      var resetChannel = new Button
-      { Content = "Reset", HorizontalAlignment = HorizontalAlignment.Left };
-
-      changeChannel.Click += async (s, args) =>
+      for (int i = 0; i < 5; i++)
       {
-        if (twitchClient != null)
-        {
-          await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
-          {
-            twitchClient.LeaveChannel(currentChannel);
-            Task.Delay(TimeSpan.FromSeconds(1));
-            twitchClient.JoinChannel(newChannelInput.Text);
-          });
-          currentChannel = storedAltChannel;
-        }
-      };
+        if (localSettings.Values.TryGetValue($"AltChannel{i}", out object altChannel))
+          storedAltChannels[i] = altChannel as string;
+        else
+          storedAltChannels[i] = _broadcasterName;
 
-      resetChannel.Click += async (s, args) =>
+        newChannelInputs[i] = new TextBox
+        {
+          PlaceholderText = $"Channel {i + 1}",
+          Text = storedAltChannels[i],
+          HorizontalAlignment = Windows.UI.Xaml.HorizontalAlignment.Left
+        };
+
+        changeButtons[i] = new Button
+        {
+          Content = $"Go Now {i + 1}",
+          HorizontalAlignment = HorizontalAlignment.Right
+        };
+
+        int currentIndex = i; // To avoid closure problem in async method
+        changeButtons[i].Click += async (s, args) =>
+        {
+          if (twitchClient != null)
+          {
+            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+            {
+              twitchClient.LeaveChannel(currentChannel);
+              Task.Delay(TimeSpan.FromSeconds(1));
+              twitchClient.JoinChannel(newChannelInputs[currentIndex].Text);
+            });
+            currentChannel = storedAltChannels[currentIndex];
+          }
+        };
+      }
+
+      resetButton.Click += async (s, args) =>
       {
         if (twitchClient != null)
         {
@@ -124,24 +146,32 @@ namespace VRCatNet
         }
       };
 
+      var channelChangeStackPanel = new StackPanel();
+      for (int i = 0; i < 5; i++)
+      {
+        var channelGrid = new Grid
+        {
+          HorizontalAlignment = HorizontalAlignment.Stretch,
+          Children =
+            {
+                newChannelInputs[i],
+                changeButtons[i]
+            }
+        };
+
+        channelChangeStackPanel.Children.Add(channelGrid);
+      }
+
       var changeChannelDialog = new ContentDialog
       {
-        Title = "Change Twitch Channel",
+        Title = "Change Chats",
         Content = new StackPanel
         {
           Children =
-        {
-            newChannelInput,
-            new Grid // Use Grid instead of StackPanel
             {
-                HorizontalAlignment = HorizontalAlignment.Stretch,
-                Children =
-                {
-                  resetChannel,
-                    changeChannel
-                }
+                channelChangeStackPanel,
+                resetButton
             }
-        }
         },
         PrimaryButtonText = "Close"
       };
@@ -151,11 +181,15 @@ namespace VRCatNet
 
       if (result == ContentDialogResult.Primary)
       {
-        if (!string.IsNullOrWhiteSpace(newChannelInput.Text))
+        for (int i = 0; i < newChannelInputs.Length; i++)
         {
-          localSettings.Values["AltChannel"] = newChannelInput.Text;
+          if (!string.IsNullOrWhiteSpace(newChannelInputs[i].Text))
+          {
+            localSettings.Values[$"AltChannel{i}"] = newChannelInputs[i].Text;
+          }
         }
       }
+
     }
 
     private async void DropGame_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
@@ -283,6 +317,7 @@ namespace VRCatNet
           () =>
           {
             UpdateTextHistory($"Connected to Twitch chat.\n");
+            ToggleTwitchButtonState(true);
             toggleTwitch.IsChecked = true;
           });
     }
@@ -310,8 +345,15 @@ namespace VRCatNet
           });
     }
 
-    private void TwitchClient_OnDisconnected(object sender, OnDisconnectedEventArgs e)
+    private async void TwitchClient_OnDisconnected(object sender, OnDisconnectedEventArgs e)
     {
+      await Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
+        () =>
+        {
+          UpdateTextHistory($"Connected to Twitch chat.\n");
+          ToggleTwitchButtonState(false);
+          toggleTwitch.IsChecked = false;
+        });
     }
 
     private async Task<BitmapImage> GetEmoteImageAsync(string emoteUrl)

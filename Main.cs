@@ -43,13 +43,11 @@ namespace VRCatNet
 
     private readonly SemaphoreSlim uiSemaphore = new SemaphoreSlim(1, 1);
     private bool audioEnabled;
-    private bool OBSIsConnected;
     private bool isSendingMessage;
     private bool messageSentByApp;
 
     private UDPSender oscSender;
     private bool pauseScroll;
-
 
     private Dictionary<string, BitmapImage> _emoteCache = new Dictionary<string, BitmapImage>();
 
@@ -70,6 +68,7 @@ namespace VRCatNet
       // Add event handlers for the send button and return key
       sendButton.Click += SendButton_Click;
 
+      makeClip.Click                += makeClip_Click;
       oscTriggers.Click             += OscTriggers_Click;
       gButton.Click                 += gButton_Click;
       textInput.KeyDown             += TextInput_KeyUp;
@@ -103,6 +102,7 @@ namespace VRCatNet
         twitchAutoConnect = (bool)connectOption;
       if (localSettings.Values.TryGetValue("AutoConnectOBS", out object obsConnectOption))
         obsAutoConnect = (bool)obsConnectOption;
+
       if(obsAutoConnect)
       {
         string OBSAddress = "127.0.0.1";

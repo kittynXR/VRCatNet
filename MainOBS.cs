@@ -17,6 +17,8 @@ using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
 using Windows.UI.Xaml.Media;
 
+// TODO:  reverse scene & sources order
+
 namespace VRCatNet
 {
   public class ScenesData
@@ -56,6 +58,8 @@ namespace VRCatNet
     public StackPanel stackPanel { get; set; }
 
     private bool obsAutoConnect = false;
+    private bool OBSIsConnected = false;
+    private bool OBSReplayEnabled = false;
     private string selectedSceneName;
     public delegate void SourcesDataReceivedHandler(string sourcesString);
 
@@ -67,9 +71,13 @@ namespace VRCatNet
       sceneSelector.Click += SceneSelector_Click;
       //sourceSelector.Click += SourceSelector_Click;
       obsConfig.Click += ObsConfig_Click;
-      makeClip.Click += makeClip_Click;
-
-
+      obsRecordToggle.Click += ObsRecordToggle_Click;
+      obsRecordToggle.Checked += ObsRecordToggle_Checked;
+      obsRecordToggle.Unchecked += ObsRecordToggle_Unchecked;
+      obsPauseToggle.Click += ObsPauseToggle_Click;
+      obsPauseToggle.Checked += ObsPauseToggle_Checked;
+      obsPauseToggle.Unchecked += ObsPauseToggle_Unchecked;
+      
 
       if (obsAutoConnect)
       {
@@ -81,6 +89,14 @@ namespace VRCatNet
       }
       //obsRecordToggle.Click         += ObsRecordToggle_Click;
     }
+
+    private void ToggleObsButtonState(bool btnEnabled)
+    {
+      sceneSelector.IsEnabled = btnEnabled;
+      obsRecordToggle.IsEnabled = btnEnabled;
+      if(btnEnabled == false)
+        obsPauseToggle.IsEnabled = btnEnabled;
+    } 
 
     private async void ObsConfig_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
     {
@@ -149,6 +165,19 @@ namespace VRCatNet
       var obsConnect = new Button
       { Content = "Connect", HorizontalAlignment = Windows.UI.Xaml.HorizontalAlignment.Center };
 
+      string obsReplayContent;
+      if(OBSReplayEnabled)
+      {
+        obsReplayContent = "Stop Replay Buffer";
+      }
+      else
+      {
+        obsReplayContent = "Start Replay Buffer";
+      }
+
+      var obsReplay = new Button
+      { Content = obsReplayContent, HorizontalAlignment = Windows.UI.Xaml.HorizontalAlignment.Center };
+
       obsConnect.Click += async (s, args) =>
       {
         if (!string.IsNullOrWhiteSpace(obsPasswordInput.Password))
@@ -169,6 +198,25 @@ namespace VRCatNet
         await OBSConnect(OBSAddress);
       };
 
+      obsReplay.Click += async (s, args) =>
+      {
+        if (!OBSReplayEnabled)
+        {
+          obsReplay.Content = "Stop Replay Buffer";
+          ObsRequest("StartReplayBuffer");
+          makeClip.IsEnabled = true;
+          OBSReplayEnabled = true;
+        }
+        else
+        {
+          obsReplay.Content = "Start Replay Buffer";
+          ObsRequest("StopReplayBuffer");
+          OBSReplayEnabled= false;
+          if(!twitchFullAuth || !twitchIsConnected)
+            makeClip.IsEnabled = false;
+        }
+      };
+
       var obsDialog = new ContentDialog
       {
         Title = "OBS Settings",
@@ -176,6 +224,7 @@ namespace VRCatNet
         {
           Children =
                     {
+                        obsReplay,
                         obsAddressInput,
                         obsPortInput,
                         obsPasswordInput,
@@ -458,16 +507,24 @@ namespace VRCatNet
       return await tcs.Task;
     }
 
-    private void obsRecordToggle_Checked(object sender, Windows.UI.Xaml.RoutedEventArgs e)
+    private void ObsRecordToggle_Checked(object sender, Windows.UI.Xaml.RoutedEventArgs e)
     {
       if (!OBSIsConnected) return;
 
+      obsPauseToggle.IsEnabled = true;
+      obsRecordToggle.Content = "STOP\nREC";
+      ObsRequest("StartRecord");
     }
 
-    private void obsRecordToggle_Unchecked(object sender, Windows.UI.Xaml.RoutedEventArgs e)
+    private void ObsRecordToggle_Unchecked(object sender, Windows.UI.Xaml.RoutedEventArgs e)
     {
       if (!OBSIsConnected) return;
 
+      obsPauseToggle.IsEnabled = false;
+      obsPauseToggle.IsChecked = false;
+
+      obsRecordToggle.Content = "*REC*";
+      ObsRequest("StopRecord");
     }
 
     private void ObsRecordToggle_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
@@ -475,10 +532,47 @@ namespace VRCatNet
       //SetCurrentScene("Record");
     }
 
-    private void makeClip_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
+    private void ObsPauseToggle_Checked(object sender, Windows.UI.Xaml.RoutedEventArgs e)
     {
       if (!OBSIsConnected) return;
-      //SetCurrentScene("VRChatLive");
+
+      obsPauseToggle.Content = "resume\nrecording";
+      ObsRequest("PauseRecord");
+
+    }
+
+    private void ObsPauseToggle_Unchecked(object sender, Windows.UI.Xaml.RoutedEventArgs e)
+    {
+      if (!OBSIsConnected) return;
+      obsPauseToggle.Content = "pause\nrecording";
+      ObsRequest("ResumeRecord");
+    }
+
+    private async void ObsRequest(string command)
+    {
+      string requestId = Guid.NewGuid().ToString();
+
+      // Create the request
+      var request = new
+      {
+        op = 6,
+        d = new
+        {
+          requestType = command,
+          requestId = requestId
+        }
+      };
+
+      // Convert the request to JSON
+      var requestJson = JsonConvert.SerializeObject(request);
+
+      // Send the request
+      await SendMessageUsingMessageWebSocketAsync(requestJson);
+    }
+
+    private void ObsPauseToggle_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
+    {
+      //SetCurrentScene("Pause");
     }
 
     private async Task OBSConnect(string OBSAddress)
@@ -502,6 +596,7 @@ namespace VRCatNet
 
         OBSIsConnected = true;
         UpdateTextHistory($"Connected to OBS.\n");
+        ToggleObsButtonState(true);
       }
       catch (Exception connectEx)
       {
@@ -776,6 +871,7 @@ namespace VRCatNet
       // 1015 - TLS or SSL error
       OBSIsConnected = false;
       Debug.WriteLine("WebSocket_Closed; Code: " + args.Code + ", Reason: \"" + args.Reason + "\"");
+      ToggleObsButtonState(false);
       // Add additional code here to handle the WebSocket being closed.
     }
 
