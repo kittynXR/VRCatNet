@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Windows.Storage;
 using Windows.Storage.Streams;
@@ -218,13 +219,14 @@ namespace VRCatNet
     private async void SceneSelector(string scenesString)
     {
       var scenesData = JsonConvert.DeserializeObject<ScenesData>(scenesString);
-      await RequestSources(scenesData.currentProgramSceneName);
 
-      await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+      await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () =>
       {
         stackPanel = new StackPanel();
         var sceneGrid = GenerateGrid(scenesData);
         stackPanel.Children.Add(sceneGrid);
+
+        await RequestSources(scenesData.currentProgramSceneName);
 
         var border = new Border
         {
@@ -280,7 +282,6 @@ namespace VRCatNet
         dialog.ShowAsync().AsTask().GetAwaiter();
       });
     }
-
 
     private Grid GenerateGrid(ScenesData scenesData, SourcesData sourcesData = null)
     {
@@ -396,6 +397,8 @@ namespace VRCatNet
 
       await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
       {
+        try
+    {
         var grid = new Grid();
 
         for (var i = 0; i < sourcesData.sceneItems.Count; i++)
@@ -444,6 +447,12 @@ namespace VRCatNet
         };
 
         tcs.SetResult(border);
+        }
+    catch (Exception e)
+    {
+        Debug.WriteLine(e);
+        tcs.SetException(e);
+    }
       });
 
       return await tcs.Task;
