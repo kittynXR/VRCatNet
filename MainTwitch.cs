@@ -25,6 +25,7 @@ namespace VRCatNet
     private string currentChannel;
     private string _broadcasterName;
     private bool twitchIsConnected;
+    private bool twitchAutoConnect;
 
     private async Task InitializeTwitchClient()
     {

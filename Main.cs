@@ -56,8 +56,7 @@ namespace VRCatNet
     public MainPage()
     {
       InitializeComponent();
-      InitializeOsc();
-      InitializeObs();
+      Loaded += MainPage_Loaded;
 
       var localSettings = ApplicationData.Current.LocalSettings;
 
@@ -83,7 +82,6 @@ namespace VRCatNet
       UpdateCharacterCounter();
     }
 
-
     private void OscTriggers_Click(object sender, RoutedEventArgs e)
     {
       //throw new NotImplementedException();
@@ -97,7 +95,48 @@ namespace VRCatNet
 
     private async void MainPage_Loaded(object sender, RoutedEventArgs e)
     {
-      await InitializeTwitchClient();
+      var localSettings = ApplicationData.Current.LocalSettings;
+      InitializeOsc();
+      InitializeObs();
+
+      if (localSettings.Values.TryGetValue("AutoConnectTwitch", out object connectOption))
+        twitchAutoConnect = (bool)connectOption;
+      if (localSettings.Values.TryGetValue("AutoConnectOBS", out object obsConnectOption))
+        obsAutoConnect = (bool)obsConnectOption;
+      if(obsAutoConnect)
+      {
+        string OBSAddress = "127.0.0.1";
+        string OBSPort = "4455";
+        string OBSPassword = "";
+        bool? SSLOption = false;
+
+        if (localSettings.Values.TryGetValue("OBSAddress", out object obsAddress) && !string.IsNullOrEmpty(obsAddress as string))
+          OBSAddress = obsAddress as string;
+
+        if (localSettings.Values.TryGetValue("OBSPort", out object obsPort) && !string.IsNullOrEmpty(obsPort as string))
+          OBSPort = obsPort as string;
+
+        if (localSettings.Values.TryGetValue("OBSPassword", out object obsPassword) && !string.IsNullOrEmpty(obsPassword as string))
+          OBSPassword = obsPassword as string;
+
+        if (localSettings.Values.TryGetValue("SSLOption", out object useSSLOption) && useSSLOption != null)
+          SSLOption = (bool)useSSLOption;
+
+        OBSAddress = $"{(SSLOption ?? false ? "wss" : "ws")}://{OBSAddress}:{OBSPort}/";
+        await OBSConnect(OBSAddress);
+      }
+      if(twitchAutoConnect)
+      {
+        try
+        {
+          await InitializeTwitchClient();
+          initTwitchButton.Content = "Disconnect TTV";
+        }
+        catch (Exception ex)
+        {
+          Debug.WriteLine($"initTwitchButton_Click exception: {ex.Message}");
+        }
+      }
     }
 
     private void TextHistory_ContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)

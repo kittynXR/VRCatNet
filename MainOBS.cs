@@ -50,7 +50,8 @@ namespace VRCatNet
   {
     private Windows.Networking.Sockets.MessageWebSocket messageWebSocket;
     public Grid SceneGrid { get; set; }
-    public Grid SourceGrid { get; set; }
+    public Border SourceGrid { get; set; }
+
     public StackPanel stackPanel { get; set; }
 
     private bool obsAutoConnect = false;
@@ -65,10 +66,9 @@ namespace VRCatNet
       sceneSelector.Click += SceneSelector_Click;
       //sourceSelector.Click += SourceSelector_Click;
       obsConfig.Click += ObsConfig_Click;
-      vrCat.Click += VrCat_Click;
+      makeClip.Click += makeClip_Click;
 
-      if (localSettings.Values.TryGetValue("AutoConnectOBS", out object obsConnectOption))
-        obsAutoConnect = (bool)obsConnectOption;
+
 
       if (obsAutoConnect)
       {
@@ -218,6 +218,7 @@ namespace VRCatNet
     private async void SceneSelector(string scenesString)
     {
       var scenesData = JsonConvert.DeserializeObject<ScenesData>(scenesString);
+      await RequestSources(scenesData.currentProgramSceneName);
 
       await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
       {
@@ -225,19 +226,28 @@ namespace VRCatNet
         var sceneGrid = GenerateGrid(scenesData);
         stackPanel.Children.Add(sceneGrid);
 
+        var border = new Border
+        {
+          BorderThickness = new Thickness(2),
+          BorderBrush = new SolidColorBrush(Windows.UI.Colors.LightSeaGreen),
+          Child = stackPanel
+        };
+
         var dialog = new ContentDialog
         {
           Title = "Select Scene and Source",
           Content = new ScrollViewer
           {
-            Content = stackPanel,
+            Content = border,
             HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
             VerticalScrollBarVisibility = ScrollBarVisibility.Auto
           },
           PrimaryButtonText = "Close"
         };
 
-        OnSourcesDataReceived += async (sourcesString) =>
+        SourcesDataReceivedHandler handler = null;
+
+        handler = async (sourcesString) =>
         {
           // Deserialize the sources data
           var sourcesData = JsonConvert.DeserializeObject<SourcesData>(sourcesString);
@@ -253,14 +263,24 @@ namespace VRCatNet
             else
             {
               // Update the sources grid
-              await UpdateSourcesGridAsync(sourcesData);
+              await UpdateSourcesGridAsync(sourcesData, (Grid)SourceGrid.Child);
             }
           });
+        };
+
+        OnSourcesDataReceived += handler;
+
+        dialog.Closed += (s, e) =>
+        {
+          OnSourcesDataReceived -= handler;
+          SourceGrid = null;
+          stackPanel.Children.Clear();
         };
 
         dialog.ShowAsync().AsTask().GetAwaiter();
       });
     }
+
 
     private Grid GenerateGrid(ScenesData scenesData, SourcesData sourcesData = null)
     {
@@ -281,7 +301,10 @@ namespace VRCatNet
         var button = new ToggleButton
         {
           Content = scenesData.scenes[i].sceneName,
-          IsChecked = scenesData.scenes[i].sceneName == scenesData.currentProgramSceneName
+          IsChecked = scenesData.scenes[i].sceneName == scenesData.currentProgramSceneName,
+          Margin = new Thickness(2),  // 2 pixel margin around each button
+          HorizontalAlignment = HorizontalAlignment.Stretch,
+          VerticalAlignment = VerticalAlignment.Stretch
         };
 
         button.Checked += async (sender, args) =>
@@ -305,7 +328,6 @@ namespace VRCatNet
           Debug.WriteLine("RequestSources method called");
         };
 
-
         grid.Children.Add(button);
         Grid.SetRow(button, i / 3);
         Grid.SetColumn(button, i % 3);
@@ -314,23 +336,23 @@ namespace VRCatNet
       return grid;
     }
 
-    private async Task UpdateSourcesGridAsync(SourcesData newSourcesData)
+    private async Task UpdateSourcesGridAsync(SourcesData newSourcesData, Grid srcGrid)
     {
       await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
       {
         // Assuming SourceGrid is a class member variable
-        SourceGrid.Children.Clear();
-        SourceGrid.RowDefinitions.Clear();
-        SourceGrid.ColumnDefinitions.Clear();
+        srcGrid.Children.Clear();
+        srcGrid.RowDefinitions.Clear();
+        srcGrid.ColumnDefinitions.Clear();
 
         for (var i = 0; i < newSourcesData.sceneItems.Count; i++)
         {
-          SourceGrid.RowDefinitions.Add(new RowDefinition());
+          srcGrid.RowDefinitions.Add(new RowDefinition());
         }
 
         for (var i = 0; i < 3; i++)
         {
-          SourceGrid.ColumnDefinitions.Add(new ColumnDefinition());
+          srcGrid.ColumnDefinitions.Add(new ColumnDefinition());
         }
 
         for (var i = 0; i < newSourcesData.sceneItems.Count; i++)
@@ -338,34 +360,39 @@ namespace VRCatNet
           var toggleButton = new ToggleButton
           {
             Content = newSourcesData.sceneItems[i].sourceName,
-            IsChecked = newSourcesData.sceneItems[i].sceneItemEnabled == true
+            IsChecked = newSourcesData.sceneItems[i].sceneItemEnabled == true,
+            Margin = new Thickness(2),  // 2 pixel margin around each button
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            VerticalAlignment = VerticalAlignment.Stretch
           };
+
+          var index = i;
 
           toggleButton.Checked += (sender, args) =>
           {
-            SetSourceState(selectedSceneName, newSourcesData.sceneItems[i].sceneItemId, true);
+            SetSourceState(selectedSceneName, newSourcesData.sceneItems[index].sceneItemId, true);
           };
 
           toggleButton.Unchecked += (sender, args) =>
           {
-            SetSourceState(selectedSceneName, newSourcesData.sceneItems[i].sceneItemId, false);
+            SetSourceState(selectedSceneName, newSourcesData.sceneItems[index].sceneItemId, false);
           };
 
-          SourceGrid.Children.Add(toggleButton);
+          srcGrid.Children.Add(toggleButton);
           Grid.SetRow(toggleButton, i / 3);
           Grid.SetColumn(toggleButton, i % 3);
         }
       });
     }
 
-    private async Task<Grid> GenerateSourcesGridAsync(SourcesData sourcesData)
+    private async Task<Border> GenerateSourcesGridAsync(SourcesData sourcesData)
     {
       if(sourcesData == null)
       {
         Debug.WriteLine("sourcesData is null");
         return null;
       }
-      var tcs = new TaskCompletionSource<Grid>();
+      var tcs = new TaskCompletionSource<Border>();
 
       await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
       {
@@ -386,17 +413,22 @@ namespace VRCatNet
           var toggleButton = new ToggleButton
           {
             Content = sourcesData.sceneItems[i].sourceName,
-            IsChecked = sourcesData.sceneItems[i].sceneItemEnabled == true
+            IsChecked = sourcesData.sceneItems[i].sceneItemEnabled == true,
+            Margin = new Thickness(2),  // 2 pixel margin around each button
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            VerticalAlignment = VerticalAlignment.Stretch
           };
+
+          var index = i; // Create a new variable inside the loop
 
           toggleButton.Checked += (sender, args) =>
           {
-            SetSourceState(selectedSceneName, sourcesData.sceneItems[i].sceneItemId, true);
+            SetSourceState(selectedSceneName, sourcesData.sceneItems[index].sceneItemId, true);
           };
 
           toggleButton.Unchecked += (sender, args) =>
           {
-            SetSourceState(selectedSceneName, sourcesData.sceneItems[i].sceneItemId, false);
+            SetSourceState(selectedSceneName, sourcesData.sceneItems[index].sceneItemId, false);
           };
 
           grid.Children.Add(toggleButton);
@@ -404,7 +436,14 @@ namespace VRCatNet
           Grid.SetColumn(toggleButton, i % 3);
         }
 
-        tcs.SetResult(grid);
+        var border = new Border
+        {
+          BorderBrush = new SolidColorBrush(Colors.LightPink),
+          BorderThickness = new Thickness(2),
+          Child = grid
+        };
+
+        tcs.SetResult(border);
       });
 
       return await tcs.Task;
@@ -427,7 +466,7 @@ namespace VRCatNet
       //SetCurrentScene("Record");
     }
 
-    private void VrCat_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
+    private void makeClip_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
     {
       if (!OBSIsConnected) return;
       //SetCurrentScene("VRChatLive");
@@ -529,7 +568,7 @@ namespace VRCatNet
 
             Debug.WriteLine("Got message using MessageWebSocket: " + messageString);
           }
-
+          
           if (message.op == 7)
           {
             if ((message.d.requestType == "GetSceneList") && (message.d.responseData != null))
@@ -644,7 +683,7 @@ namespace VRCatNet
           requestData = new
           {
             sceneName = scene,
-            sourceId = source,
+            sceneItemId = source,
             sceneItemEnabled = sourceState
           }
         }
