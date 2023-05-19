@@ -4,52 +4,75 @@ using System.Threading.Tasks;
 using System;
 using System.IO;
 using System.Net.Http;
-using TwitchLib.Client.Events;
-using TwitchLib.Client.Models;
-using TwitchLib.Client;
 using Windows.Storage;
 using Windows.UI.Core;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
-using TwitchLib.Communication.Events;
 using Windows.UI.Xaml.Media.Imaging;
+using TwitchLib.Api;
+using TwitchLib.Api.Auth;
+using TwitchLib.Client;
+using TwitchLib.Client.Events;
+using TwitchLib.Client.Models;
+using TwitchLib.Communication.Events;
 using TwitchLib.Communication.Clients;
 using TwitchLib.Communication.Models;
+using TwitchLib.Api.Core.Enums;
+using System.Collections.Generic;
+using Windows.ApplicationModel.Resources.Core;
+using System.Collections.ObjectModel;
+using Newtonsoft.Json;
+using Microsoft.UI.Xaml.Controls;
+using System.Linq;
+using System.Windows.Input;
+using Windows.Security.Credentials;
 
 namespace VRCatNet
 {
   public sealed partial class MainPage : Page
   {
+    const int NumQuickItems = 10;
     private TwitchClient twitchClient;
 
     private string currentChannel;
-    private string _broadcasterName;
     private bool twitchIsConnected;
     private bool twitchFullAuth;
     private bool twitchAutoConnect;
+    private bool twitchStoreAuth;
+    private string twitchOAuthKey;
+    private string twitchBroadcasterName;
+
+    private List<StackPanel> gameButtonPanels;
 
     private async Task InitializeTwitchClient()
     {
+      gameButtonPanels = new List<StackPanel>();
+
       var localSettings = ApplicationData.Current.LocalSettings;
-      var storedOAuthKey = localSettings.Values["OAuthKey"] as string;
-      var broadcasterName = localSettings.Values["BroadcasterName"] as string;
-      _broadcasterName = localSettings.Values["BroadcasterName"] as string;
-      currentChannel = _broadcasterName;
+      PasswordVault vault = new PasswordVault();
+
+      if(twitchOAuthKey == null)
+        twitchOAuthKey = GetCredential(vault, "OAuthKey");
+
+      if(twitchBroadcasterName == null)
+        twitchBroadcasterName = GetCredential(vault, "BroadcasterName");
+
+      currentChannel = twitchBroadcasterName;
 
       changeChannels.Click          += ChangeChannels_Click;
-      dropGame.Click                += DropGame_Click;
+      dropGame.Click                += QuickChat_Click;
       ttvPoints.Click               += TtvPoints_Click;
       twitchPrediction.Click        += TwitchPrediction_Click;
       twitchPoll.Click              += TwitchPoll_Click;
 
       try
       {
-        if (!string.IsNullOrEmpty(storedOAuthKey) && !string.IsNullOrEmpty(broadcasterName))
+        if (!string.IsNullOrEmpty(twitchOAuthKey) && !string.IsNullOrEmpty(twitchBroadcasterName))
         {
           // Configure the Twitch client
-          var credentials = new ConnectionCredentials(broadcasterName, storedOAuthKey);
+          var credentials = new ConnectionCredentials(twitchBroadcasterName, twitchOAuthKey);
           twitchClient = new TwitchClient();
-          twitchClient.Initialize(credentials, _broadcasterName);
+          twitchClient.Initialize(credentials, twitchBroadcasterName);
 
           // Subscribe to relevant events
           twitchClient.OnMessageSent      += TwitchClient_OnMessageSent;
@@ -91,23 +114,40 @@ namespace VRCatNet
     private async void ChangeChannels_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
     {
       var localSettings = ApplicationData.Current.LocalSettings;
-      string[] storedAltChannels = new string[5];
-      TextBox[] newChannelInputs = new TextBox[5];
-      Button[] changeButtons = new Button[5];
+      string[] storedAltChannels = new string[NumQuickItems];
+      TextBox[] newChannelInputs = new TextBox[NumQuickItems];
+      Button[] changeButtons = new Button[NumQuickItems];
       Button resetButton = new Button { Content = "Reset", HorizontalAlignment = HorizontalAlignment.Left };
 
-      for (int i = 0; i < 5; i++)
+      var channelChangeStackPanel = new StackPanel();
+
+
+      var changeChannelDialog = new ContentDialog
+      {
+        Title = "Change Chats",
+        Content = new StackPanel
+        {
+          Children =
+            {
+                channelChangeStackPanel,
+                resetButton
+            }
+        },
+        PrimaryButtonText = "Close"
+      };
+
+      for (int i = 0; i < NumQuickItems; i++)
       {
         if (localSettings.Values.TryGetValue($"AltChannel{i}", out object altChannel))
           storedAltChannels[i] = altChannel as string;
         else
-          storedAltChannels[i] = _broadcasterName;
+          storedAltChannels[i] = twitchBroadcasterName;
 
         newChannelInputs[i] = new TextBox
         {
           PlaceholderText = $"Channel {i + 1}",
           Text = storedAltChannels[i],
-          HorizontalAlignment = Windows.UI.Xaml.HorizontalAlignment.Left
+          HorizontalAlignment = HorizontalAlignment.Left
         };
 
         changeButtons[i] = new Button
@@ -126,28 +166,15 @@ namespace VRCatNet
               twitchClient.LeaveChannel(currentChannel);
               Task.Delay(TimeSpan.FromSeconds(1));
               twitchClient.JoinChannel(newChannelInputs[currentIndex].Text);
+              changeChannelDialog.Hide();
+              textInput.Focus(FocusState.Programmatic);
             });
             currentChannel = storedAltChannels[currentIndex];
           }
         };
       }
 
-      resetButton.Click += async (s, args) =>
-      {
-        if (twitchClient != null)
-        {
-          await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
-          {
-            twitchClient.LeaveChannel(currentChannel);
-            Task.Delay(TimeSpan.FromSeconds(1));
-            twitchClient.JoinChannel(_broadcasterName);
-          });
-          currentChannel = _broadcasterName;
-        }
-      };
-
-      var channelChangeStackPanel = new StackPanel();
-      for (int i = 0; i < 5; i++)
+      for (int i = 0; i < NumQuickItems; i++)
       {
         var channelGrid = new Grid
         {
@@ -162,19 +189,25 @@ namespace VRCatNet
         channelChangeStackPanel.Children.Add(channelGrid);
       }
 
-      var changeChannelDialog = new ContentDialog
+      resetButton.Click += async (s, args) =>
       {
-        Title = "Change Chats",
-        Content = new StackPanel
+        if (twitchClient != null)
         {
-          Children =
-            {
-                channelChangeStackPanel,
-                resetButton
-            }
-        },
-        PrimaryButtonText = "Close"
+          await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+          {
+            twitchClient.LeaveChannel(currentChannel);
+            Task.Delay(TimeSpan.FromSeconds(1));
+            twitchClient.JoinChannel(twitchBroadcasterName);
+            changeChannelDialog.Hide();
+             textInput.Focus(FocusState.Programmatic);
+          });
+          currentChannel = twitchBroadcasterName;
+        }
       };
+
+
+
+
 
       // Show the dialog and update the Twitch client's OAuth key, broadcaster name, OSC address, and OSC port if provided
       var result = await changeChannelDialog.ShowAsync();
@@ -188,64 +221,200 @@ namespace VRCatNet
             localSettings.Values[$"AltChannel{i}"] = newChannelInputs[i].Text;
           }
         }
+        textInput.Focus(FocusState.Programmatic);
       }
 
     }
 
-    private async void DropGame_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
+    private async void QuickChat_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
     {
-      var dropDialog = new ContentDialog();
+      var localSettings = ApplicationData.Current.LocalSettings;
+      string[] storedQuickChat = new string[NumQuickItems];
+      TextBox[] newQuickChatInputs = new TextBox[NumQuickItems];
+      Button[] changeButtons = new Button[NumQuickItems];
+      bool isEdit = true; // To toggle between Edit and Save
+      Button editSaveButton = new Button { Content = "Edit", HorizontalAlignment = HorizontalAlignment.Left };
 
-      var pizzaBtn = new Button
-      { Content = "pineapple", HorizontalAlignment = Windows.UI.Xaml.HorizontalAlignment.Center };
+      var channelChangeStackPanel = new StackPanel();
 
-      pizzaBtn.Click += (s, args) =>
+      var quickChatDialog = new ContentDialog
       {
-        textInput.Text = "!drop luunavrPizza";
-        SendMessage();
-        dropDialog.Hide();
-        textInput.Focus(FocusState.Programmatic);
-      };
-
-      var cuteBtn = new Button
-      { Content = "ucute", HorizontalAlignment = Windows.UI.Xaml.HorizontalAlignment.Center };
-
-      cuteBtn.Click += (s, args) =>
-      {
-        textInput.Text = "!drop kittyn9Ucute";
-        SendMessage();
-        dropDialog.Hide();
-        textInput.Focus(FocusState.Programmatic);
-      };
-
-      var derpBtn = new Button
-      { Content = "derp", HorizontalAlignment = Windows.UI.Xaml.HorizontalAlignment.Center };
-
-      derpBtn.Click += (s, args) =>
-      {
-        textInput.Text = "!drop totsDerp";
-        SendMessage();
-        dropDialog.Hide();
-        textInput.Focus(FocusState.Programmatic);
-      };
-
-      dropDialog.Title = "Chat Games";
-      dropDialog.Content = new StackPanel
-      {
+        Title = "Quick Chats",
+        Content = new StackPanel
+        {
           Children =
-                    {
-                      pizzaBtn,
-                      cuteBtn,
-                      derpBtn
-                    },
+            {
+                channelChangeStackPanel,
+                editSaveButton
+            }
+        },
+        PrimaryButtonText = "Close"
       };
-      dropDialog.PrimaryButtonText = "Close";
 
-      var result = await dropDialog.ShowAsync();
+      for (int i = 0; i < NumQuickItems; i++)
+      {
+        if (localSettings.Values.TryGetValue($"QuickChat{i}", out object quickChat))
+          storedQuickChat[i] = quickChat as string;
+        else
+          storedQuickChat[i] = $"QC{i}";
+
+        newQuickChatInputs[i] = new TextBox
+        {
+          PlaceholderText = $"Quick Chat {i + 1}",
+          Text = storedQuickChat[i],
+          HorizontalAlignment = HorizontalAlignment.Left,
+          Visibility = Visibility.Collapsed
+        };
+
+        changeButtons[i] = new Button
+        {
+          Content = $"{storedQuickChat[i]}",
+          HorizontalAlignment = HorizontalAlignment.Right
+        };
+
+        int currentIndex = i; // To avoid closure problem in async method
+        changeButtons[i].Click += async (s, args) =>
+        {
+          if (twitchClient != null)
+          {
+            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+            {
+              textInput.Text = newQuickChatInputs[currentIndex].Text;
+              SendMessage();
+              quickChatDialog.Hide();
+              textInput.Focus(FocusState.Programmatic);
+            });
+          }
+        };
+      }
+
+      for (int i = 0; i < NumQuickItems; i++)
+      {
+        var channelGrid = new Grid
+        {
+          HorizontalAlignment = HorizontalAlignment.Stretch,
+          Children =
+            {
+                newQuickChatInputs[i],
+                changeButtons[i]
+            }
+        };
+
+        channelChangeStackPanel.Children.Add(channelGrid);
+      }
+
+      editSaveButton.Click += (s, args) =>
+      {
+        isEdit = !isEdit;
+        editSaveButton.Content = isEdit ? "Edit" : "Save";
+        Visibility visibility = isEdit ? Visibility.Collapsed : Visibility.Visible;
+
+        foreach (TextBox textBox in newQuickChatInputs)
+        {
+          textBox.Visibility = visibility;
+        }
+
+        if (!isEdit)
+        {
+          for (int i = 0; i < newQuickChatInputs.Length; i++)
+          {
+            if (!string.IsNullOrWhiteSpace(newQuickChatInputs[i].Text))
+            {
+              changeButtons[i].Content = newQuickChatInputs[i].Text;
+              localSettings.Values[$"QuickChat{i}"] = newQuickChatInputs[i].Text;
+            }
+          }
+        }
+      };
+
+      var result = await quickChatDialog.ShowAsync();
+
+      if (result == ContentDialogResult.Primary)
+      {
+        for (int i = 0; i < newQuickChatInputs.Length; i++)
+        {
+          if (!string.IsNullOrWhiteSpace(newQuickChatInputs[i].Text))
+          {
+            localSettings.Values[$"QuickChat{i}"] = newQuickChatInputs[i].Text;
+          }
+        }
+        textInput.Focus(FocusState.Programmatic);
+      }
     }
+
+    /*
+        private async void DropGame_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
+        {
+          var dropDialog = new ContentDialog();
+
+          var pizzaBtn = new Button
+          { Content = "pineapple", HorizontalAlignment = Windows.UI.Xaml.HorizontalAlignment.Center };
+
+          pizzaBtn.Click += (s, args) =>
+          {
+            textInput.Text = "!drop luunavrPizza";
+            SendMessage();
+            dropDialog.Hide();
+            textInput.Focus(FocusState.Programmatic);
+          };
+
+          var cuteBtn = new Button
+          { Content = "ucute", HorizontalAlignment = Windows.UI.Xaml.HorizontalAlignment.Center };
+
+          cuteBtn.Click += (s, args) =>
+          {
+            textInput.Text = "!drop kittyn9Ucute";
+            SendMessage();
+            dropDialog.Hide();
+            textInput.Focus(FocusState.Programmatic);
+          };
+
+          var derpBtn = new Button
+          { Content = "derp", HorizontalAlignment = Windows.UI.Xaml.HorizontalAlignment.Center };
+
+          derpBtn.Click += (s, args) =>
+          {
+            textInput.Text = "!drop totsDerp";
+            SendMessage();
+            dropDialog.Hide();
+            textInput.Focus(FocusState.Programmatic);
+          };
+
+          dropDialog.Title = "Chat Games";
+          dropDialog.Content = new StackPanel
+          {
+              Children =
+                        {
+                          pizzaBtn,
+                          cuteBtn,
+                          derpBtn
+                        },
+          };
+          dropDialog.PrimaryButtonText = "Close";
+
+          var result = await dropDialog.ShowAsync();
+        }*/
 
     private void TtvPoints_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
     {
+      var resourceLoader = Windows.ApplicationModel.Resources.ResourceLoader.GetForCurrentView("Resources");
+
+      string twitchClientId = resourceLoader.GetString("Twitch_Client_ID");
+      string twitchClientSecret = resourceLoader.GetString("Twitch_Client_Secret");
+
+      List<AuthScopes> scopes = new List<AuthScopes>()
+      {
+        AuthScopes.Channel_Read,
+        AuthScopes.Channel_Subscriptions,
+        AuthScopes.User_Read,
+        AuthScopes.User_Subscriptions
+      };
+
+      TwitchAPI api = new TwitchLib.Api.TwitchAPI();
+      api.Settings.ClientId = twitchClientId;
+      api.Settings.Secret = twitchClientSecret;
+
+      api.ThirdParty.AuthorizationFlow.CreateFlow("VRCatNet", scopes);
     }
 
     private void TwitchPrediction_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
@@ -300,7 +469,7 @@ namespace VRCatNet
       if (twitchClient.Connect())
       {
         await Task.Delay(TimeSpan.FromSeconds(1));
-        twitchClient.JoinChannel(_broadcasterName);
+        twitchClient.JoinChannel(twitchBroadcasterName);
         twitchIsConnected = true;
       }
       else
@@ -350,10 +519,16 @@ namespace VRCatNet
       await Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
         () =>
         {
-          UpdateTextHistory($"Connected to Twitch chat.\n");
+          UpdateTextHistory($"Disconnected from Twitch chat.\n");
           ToggleTwitchButtonState(false);
           toggleTwitch.IsChecked = false;
         });
+
+      if(twitchClient != null)
+      {
+        ShutdownTwitchClient();
+      }
+      twitchIsConnected = false;
     }
 
     private async Task<BitmapImage> GetEmoteImageAsync(string emoteUrl)
@@ -393,7 +568,7 @@ namespace VRCatNet
       await uiSemaphore.WaitAsync(); // Wait for the semaphore
 
       if (messageSentByApp &&
-          e.ChatMessage.Username.Equals(_broadcasterName, StringComparison.OrdinalIgnoreCase))
+          e.ChatMessage.Username.Equals(twitchBroadcasterName, StringComparison.OrdinalIgnoreCase))
       {
         messageSentByApp = false;
         return;

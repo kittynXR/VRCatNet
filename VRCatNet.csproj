@@ -199,6 +199,7 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
+    <PRIResource Include="Assets\Resources.resw" />
     <None Include="CoreOSC.csproj" />
     <None Include="Design\projectGuides.guides" />
   </ItemGroup>

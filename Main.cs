@@ -27,6 +27,7 @@ using Windows.Storage;
 using System.Linq;
 using Windows.ApplicationModel;
 using Windows.UI;
+using Windows.Security.Credentials;
 
 namespace VRCatNet
 {
@@ -48,15 +49,27 @@ namespace VRCatNet
 
     private UDPSender oscSender;
     private bool pauseScroll;
+    private string NutButtonText;
 
     private Dictionary<string, BitmapImage> _emoteCache = new Dictionary<string, BitmapImage>();
 
     public MainPage()
     {
       InitializeComponent();
-      Loaded += MainPage_Loaded;
-
       var localSettings = ApplicationData.Current.LocalSettings;
+
+      bool firstTime = true;
+      if (localSettings.Values.TryGetValue("FirstTime", out object firstTimeOption))
+        firstTime = (bool)firstTimeOption;
+
+      if (localSettings.Values.TryGetValue("NutButton", out object nutButtonOption))
+        NutButtonText = (string)nutButtonOption;
+      else
+        NutButtonText = "!gamba all";
+
+      if (firstTime) InitPasswordVault();
+
+      Loaded += MainPage_Loaded;
 
       toggleTyping.UpdateButtonColor();
 
@@ -100,15 +113,18 @@ namespace VRCatNet
 
       if (localSettings.Values.TryGetValue("AutoConnectTwitch", out object connectOption))
         twitchAutoConnect = (bool)connectOption;
+      if (localSettings.Values.TryGetValue("RememberOAuth", out object oauthOption))
+        twitchStoreAuth = (bool)oauthOption;
       if (localSettings.Values.TryGetValue("AutoConnectOBS", out object obsConnectOption))
         obsAutoConnect = (bool)obsConnectOption;
 
       if(obsAutoConnect)
       {
-        string OBSAddress = "127.0.0.1";
-        string OBSPort = "4455";
-        string OBSPassword = "";
-        bool? SSLOption = false;
+        string OBSAddress   = "127.0.0.1";
+        string OBSPort      = "4455";
+        //PasswordVault vault = new PasswordVault();
+        //string OBSPassword  = GetOBSPassword(vault);
+        bool? SSLOption     = false;
 
         if (localSettings.Values.TryGetValue("OBSAddress", out object obsAddress) && !string.IsNullOrEmpty(obsAddress as string))
           OBSAddress = obsAddress as string;
@@ -116,16 +132,13 @@ namespace VRCatNet
         if (localSettings.Values.TryGetValue("OBSPort", out object obsPort) && !string.IsNullOrEmpty(obsPort as string))
           OBSPort = obsPort as string;
 
-        if (localSettings.Values.TryGetValue("OBSPassword", out object obsPassword) && !string.IsNullOrEmpty(obsPassword as string))
-          OBSPassword = obsPassword as string;
-
         if (localSettings.Values.TryGetValue("SSLOption", out object useSSLOption) && useSSLOption != null)
           SSLOption = (bool)useSSLOption;
 
         OBSAddress = $"{(SSLOption ?? false ? "wss" : "ws")}://{OBSAddress}:{OBSPort}/";
         await OBSConnect(OBSAddress);
       }
-      if(twitchAutoConnect)
+      if (twitchAutoConnect && twitchStoreAuth)  // auto connect enabled
       {
         try
         {
@@ -295,7 +308,7 @@ namespace VRCatNet
         }
 
       // Update the text history with the sent message
-      UpdateTextHistory(textInput.Text, _broadcasterName);
+      UpdateTextHistory(textInput.Text, twitchBroadcasterName);
       ScrollToBottom();
 
       // Clear the text input
@@ -322,5 +335,68 @@ namespace VRCatNet
       }
     }
 
+    private string GetCredential(PasswordVault vault, string CredentialName)
+    {
+      try
+      {
+        // Retrieve the BroadcasterName
+        PasswordCredential cred = vault.Retrieve("CatResource", CredentialName);
+        cred.RetrievePassword();
+
+        if(cred.Password == "none")
+          return null;
+        return cred.Password;
+      }
+      catch (Exception ex)
+      {
+        Debug.WriteLine($"{ex.Message}");
+        return null; // or assign a default value, or prompt user input
+      }
+    }
+
+    private void ClearCredential(PasswordVault vault, string CredentialName)
+    {
+      PasswordCredential cred = new PasswordCredential(
+              "CatResource", // Resource for which OAuth is saved
+              CredentialName, // UserName, acting as key to retrieve the password
+              "none"); // Password or the actual OAuth Key
+      vault.Add(cred);
+    }
+    
+    private void SetCredential(PasswordVault vault, string CredentialName, string CredentialValue)
+    {
+      PasswordCredential cred = new PasswordCredential(
+        "CatResource",
+        CredentialName,
+        CredentialValue);
+      vault.Add(cred);
+    }
+    
+    private void InitPasswordVault()
+    {
+      PasswordVault vault = new PasswordVault();
+
+      PasswordCredential oauthCredential = new PasswordCredential(
+              "CatResource", // Resource for which OAuth is saved
+              "OAuthKey", // UserName, acting as key to retrieve the password
+              "none"); // Password or the actual OAuth Key
+          vault.Add(oauthCredential);
+
+      PasswordCredential broadcasterCredential = new PasswordCredential(
+              "CatResource", // Resource for which BroadcasterName is saved
+              "BroadcasterName", // UserName, acting as key to retrieve the password
+              "none"); // Password or the actual Broadcaster Name
+          vault.Add(broadcasterCredential);
+
+      PasswordCredential obsCredential = new PasswordCredential(
+              "CatResource", // Resource for which OAuth is saved
+              "OBSPassword", // UserName, acting as key to retrieve the password
+              "none"); // Password or the actual OAuth Key
+          vault.Add(obsCredential);
+
+      
+      var localSettings = ApplicationData.Current.LocalSettings;
+      localSettings.Values["FirstTime"] = false;
+    }
   }
 }

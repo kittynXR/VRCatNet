@@ -11,6 +11,7 @@ using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using LibVLCSharp.Shared;
+using Windows.Security.Credentials;
 //using LibVLCSharp.Platforms.Windows;
 //using LibVLCSharp.Shared;
 
@@ -44,14 +45,16 @@ namespace VRCatNet
       {
         // TODO:  make this a function
       }
+      textInput.Focus(FocusState.Programmatic);
     }
+    
     private void gButton_Click(object sender, RoutedEventArgs e)
     {
       if (!isSendingMessage)
       {
         isSendingMessage = true;
         messageSentByApp = true;
-        textInput.Text = "!gamba all";
+        textInput.Text = NutButtonText;
         
         SendMessage();
         isSendingMessage = false;
@@ -74,11 +77,33 @@ namespace VRCatNet
     private void toggleAudio_Checked(object sender, RoutedEventArgs e)
     {
       audioEnabled = true;
+      textInput.Focus(FocusState.Programmatic);
     }
 
     private void toggleAudio_Unchecked(object sender, RoutedEventArgs e)
     {
       audioEnabled = false;
+      textInput.Focus(FocusState.Programmatic);
+    }
+
+    private void toggleOsc_Checked(object sender, RoutedEventArgs e)
+    {
+      textInput.Focus(FocusState.Programmatic);
+    }
+
+    private void toggleOsc_Unchecked(object sender, RoutedEventArgs e)
+    {
+      textInput.Focus(FocusState.Programmatic);
+    }
+
+    private void toggleTwitch_Checked(object sender, RoutedEventArgs e)
+    {
+      textInput.Focus(FocusState.Programmatic);
+    }
+
+    private void toggleTwitch_Unchecked(object sender, RoutedEventArgs e)
+    {
+      textInput.Focus(FocusState.Programmatic);
     }
 
     protected override void OnNavigatedTo(NavigationEventArgs e)
@@ -179,12 +204,14 @@ namespace VRCatNet
     private void toggleTyping_Checked(object sender, RoutedEventArgs e)
     {
       toggleTyping.Background = new SolidColorBrush(Colors.LightSeaGreen);
+      textInput.Focus(FocusState.Programmatic);
     }
 
     private void toggleTyping_Unchecked(object sender, RoutedEventArgs e)
     {
       toggleTyping.Background = new SolidColorBrush(Colors.LightGray);
       oscSender.Send(new OscMessage("/chatbox/typing", false));
+      textInput.Focus(FocusState.Programmatic);
     }
 
     private void togglePauseScroll_Checked(object sender, RoutedEventArgs e)
@@ -228,17 +255,23 @@ namespace VRCatNet
     {
       var localSettings = ApplicationData.Current.LocalSettings;
       bool storedConnectOption, storedOAuthOption;
-      string storedOAuthKey, storedBroadcasterName, storedOscAddress, storedOscPort, storedObsAddress, storedObsPort, storedObsPassword;
+      string storedOscAddress, storedOscPort, storedObsAddress, storedObsPort, storedObsPassword;
+      string storedNutButton;
 
-      if (localSettings.Values.TryGetValue("OAuthKey", out object oauthKey))
-        storedOAuthKey = oauthKey as string;
-      else
-        storedOAuthKey = null;
+      PasswordVault vault = new PasswordVault();
 
-      if (localSettings.Values.TryGetValue("BroadcasterName", out object broadcasterName))
-        storedBroadcasterName = broadcasterName as string;
+      string storedOAuthKey = GetCredential(vault, "OAuthKey");
+      if (storedOAuthKey != null)
+        twitchOAuthKey = storedOAuthKey;
+
+      string storedBroadcasterName = GetCredential(vault, "BroadcasterName");
+      if (storedBroadcasterName != null)
+        twitchBroadcasterName = storedBroadcasterName;
+      
+      if (localSettings.Values.TryGetValue("NutButton", out object nutButton))
+        storedNutButton = nutButton as string;
       else
-        storedBroadcasterName = null;
+        storedNutButton = null;
 
       if (localSettings.Values.TryGetValue("OSCAddress", out object oscAddress))
         storedOscAddress = oscAddress as string;
@@ -278,17 +311,20 @@ namespace VRCatNet
       var oauthInput = new PasswordBox
       {
         PlaceholderText = "OAuth key",
-        IsEnabled = storedOAuthKey == null
+        IsEnabled = twitchOAuthKey == null
       };
 
-      if (storedOAuthKey != null) oauthInput.Password = storedOAuthKey; // Replace with masked OAuth key
+      if (twitchOAuthKey != null) oauthInput.Password = twitchOAuthKey; // Replace with masked OAuth key
 
       var broadcasterNameInput = new TextBox
       {
         PlaceholderText = "Broadcaster name",
-        IsEnabled = storedBroadcasterName == null,
-        Text = storedBroadcasterName ?? ""
+        IsEnabled = twitchBroadcasterName == null,
+        Text = twitchBroadcasterName ?? ""
       };
+
+      var nutButtonInput = new TextBox
+      { PlaceholderText = "Nut button: default ⇾ !gamba all", Text = storedNutButton ?? "" };
 
       var oscAddressInput = new TextBox
       { PlaceholderText = "OSC address: default ⇾ 127.0.0.1", Text = storedOscAddress ?? "" };
@@ -308,12 +344,12 @@ namespace VRCatNet
         Text = "OAuth Saved!",
         VerticalAlignment = VerticalAlignment.Center,
         HorizontalAlignment = HorizontalAlignment.Center,
-        Visibility = storedOAuthKey != null ? Visibility.Visible : Visibility.Collapsed
+        Visibility = twitchOAuthKey != null ? Visibility.Visible : Visibility.Collapsed
       };
       var editButton = new Button
       {
         Content = "Edit OAuth token",
-        Visibility = storedOAuthKey != null ? Visibility.Visible : Visibility.Collapsed
+        Visibility = twitchOAuthKey != null ? Visibility.Visible : Visibility.Collapsed
       };
 
       // Add a click event handler for the Edit button
@@ -375,7 +411,8 @@ namespace VRCatNet
                         },
                         lockedIndicator,
                         oauthTokenGeneratorLink, oscAddressInput,
-                        oscPortInput, rememberOAuthCheckBox, autoConnectTwitchCheckBox
+                        oscPortInput, rememberOAuthCheckBox, autoConnectTwitchCheckBox,
+                        nutButtonInput
                     }
         },
         PrimaryButtonText = "OK",
@@ -389,12 +426,17 @@ namespace VRCatNet
       //
       if (result == ContentDialogResult.Primary)
       {
-        if (!string.IsNullOrWhiteSpace(oauthInput.Password) &&
-            !string.IsNullOrWhiteSpace(broadcasterNameInput.Text))
+        if ((!string.IsNullOrWhiteSpace(oauthInput.Password) &&
+            !string.IsNullOrWhiteSpace(broadcasterNameInput.Text)) 
+                 && rememberOAuthCheckBox.IsChecked == true)  // weird how the bool && bool gets cast to a ?bool
         {
-          //storeAuthData(oauthInput.Password);
-          localSettings.Values["OAuthKey"] = oauthInput.Password;
-          localSettings.Values["BroadcasterName"] = broadcasterNameInput.Text;
+          SetCredential(vault, "OAuthKey", oauthInput.Password);
+          SetCredential(vault, "BroadcasterName", broadcasterNameInput.Text);
+        }
+        else
+        {
+          ClearCredential(vault, "OAuthKey");
+          ClearCredential(vault, "BroadcasterName");
         }
 
         localSettings.Values["OSCAddress"] = oscAddressInput.Text;
@@ -403,9 +445,17 @@ namespace VRCatNet
         if (oscAddressInput.Text != storedOscAddress || oscPortInput.Text != storedOscPort)
           InitializeOsc();
 
-        localSettings.Values["RememberOAuth"] = rememberOAuthCheckBox.IsChecked;
         localSettings.Values["AutoConnectTwitch"] = autoConnectTwitchCheckBox.IsChecked;
+        localSettings.Values["RememberOAuth"] = rememberOAuthCheckBox.IsChecked;
+        localSettings.Values["NutButton"] = nutButtonInput.Text;
 
+        if(!string.IsNullOrWhiteSpace(nutButtonInput.Text))
+          NutButtonText = nutButtonInput.Text;
+
+        textInput.Focus(FocusState.Programmatic);
+      }
+      if (result == ContentDialogResult.Secondary)
+      {
         textInput.Focus(FocusState.Programmatic);
       }
     }

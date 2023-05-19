@@ -5,8 +5,11 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Windows.Security.Credentials;
 using Windows.Storage;
 using Windows.Storage.Streams;
 using Windows.System;
@@ -58,6 +61,8 @@ namespace VRCatNet
     public StackPanel stackPanel { get; set; }
 
     private bool obsAutoConnect = false;
+    private bool obsStoreAuth = false;
+    private string obsPassword;
     private bool OBSIsConnected = false;
     private bool OBSReplayEnabled = false;
     private string selectedSceneName;
@@ -67,7 +72,6 @@ namespace VRCatNet
 
     private void InitializeObs()
     {
-      var localSettings = ApplicationData.Current.LocalSettings;
       sceneSelector.Click += SceneSelector_Click;
       //sourceSelector.Click += SourceSelector_Click;
       obsConfig.Click += ObsConfig_Click;
@@ -77,37 +81,35 @@ namespace VRCatNet
       obsPauseToggle.Click += ObsPauseToggle_Click;
       obsPauseToggle.Checked += ObsPauseToggle_Checked;
       obsPauseToggle.Unchecked += ObsPauseToggle_Unchecked;
-      
-
-      if (obsAutoConnect)
-      {
-        string OBSAddress = "127.0.0.1";
-        if (localSettings.Values.TryGetValue("OBSAddress", out object obsAddress))
-          OBSAddress = obsAddress as string;
-
-        //await OBSConnect(OBSAddress);
-      }
-      //obsRecordToggle.Click         += ObsRecordToggle_Click;
     }
 
-    private void ToggleObsButtonState(bool btnEnabled)
+    private async void ToggleObsButtonState(bool btnEnabled)
     {
-      sceneSelector.IsEnabled = btnEnabled;
-      obsRecordToggle.IsEnabled = btnEnabled;
-      if(btnEnabled == false)
-        obsPauseToggle.IsEnabled = btnEnabled;
+      await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+      {
+        sceneSelector.IsEnabled = btnEnabled;
+        obsRecordToggle.IsEnabled = btnEnabled;
+        if (btnEnabled == false)
+          obsPauseToggle.IsEnabled = btnEnabled;
+      });
     } 
 
     private async void ObsConfig_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
     {
-      string OBSAddress = "127.0.0.1";
-      string OBSPort = "4455";
-      string OBSPassword = "";
+      string OBSAddress   = "127.0.0.1";
+      string OBSPort      = "4455";
+      string OBSPassword  = "";
 
       var localSettings = ApplicationData.Current.LocalSettings;
 
-      string storedOBSAddress, storedObsPort, storedObsPassword;
+      string storedOBSAddress, storedObsPort;
       bool storedSSLOption, storedObsConnectOption, storedObsPasswordOption;
+
+      PasswordVault vault = new PasswordVault();
+      string storedObsPassword = GetCredential(vault, "OBSPassword");
+
+      if (storedObsPassword == "none")
+        storedObsPassword = null;
 
       if (localSettings.Values.TryGetValue("OBSAddress", out object obsAddress))
         storedOBSAddress = obsAddress as string;
@@ -118,11 +120,6 @@ namespace VRCatNet
         storedObsPort = obsPort as string;
       else
         storedObsPort = null;
-
-      if (localSettings.Values.TryGetValue("OBSPassword", out object obsPassword))
-        storedObsPassword = obsPassword as string;
-      else
-        storedObsPassword = null;
 
       if (localSettings.Values.TryGetValue("SSLOption", out object useSSLOption))
         storedSSLOption = (bool)useSSLOption;
@@ -198,7 +195,7 @@ namespace VRCatNet
         await OBSConnect(OBSAddress);
       };
 
-      obsReplay.Click += async (s, args) =>
+      obsReplay.Click += (s, args) =>
       {
         if (!OBSReplayEnabled)
         {
@@ -243,17 +240,25 @@ namespace VRCatNet
 
       if (result == ContentDialogResult.Primary)
       {
-        if (!string.IsNullOrWhiteSpace(obsPasswordInput.Password))
+        if((bool)rememberObsPasswordCheckBox.IsChecked && !string.IsNullOrWhiteSpace(obsPasswordInput.Password))
         {
-          localSettings.Values["OBSPassword"] = obsPasswordInput.Password;
+          SetCredential(vault, "OBSPassword", obsPasswordInput.Password);
         }
-
+        else
+        {
+          ClearCredential(vault, "OBSPassword");
+        }
         localSettings.Values["OBSAddress"] = obsAddressInput.Text;
         localSettings.Values["OBSPort"] = obsPortInput.Text;
 
         localSettings.Values["SSLOption"] = useSSL.IsChecked;
         localSettings.Values["AutoConnectOBS"] = autoConnectObsCheckBox.IsChecked;
         localSettings.Values["RememberOBSPassword"] = rememberObsPasswordCheckBox.IsChecked;
+        textInput.Focus(FocusState.Programmatic);
+      }
+      if (result == ContentDialogResult.Secondary)
+      {
+        textInput.Focus(FocusState.Programmatic);
       }
     }
 
@@ -326,6 +331,7 @@ namespace VRCatNet
           OnSourcesDataReceived -= handler;
           SourceGrid = null;
           stackPanel.Children.Clear();
+          textInput.Focus(FocusState.Programmatic);
         };
 
         dialog.ShowAsync().AsTask().GetAwaiter();
@@ -514,6 +520,7 @@ namespace VRCatNet
       obsPauseToggle.IsEnabled = true;
       obsRecordToggle.Content = "STOP\nREC";
       ObsRequest("StartRecord");
+      textInput.Focus(FocusState.Programmatic);
     }
 
     private void ObsRecordToggle_Unchecked(object sender, Windows.UI.Xaml.RoutedEventArgs e)
@@ -525,6 +532,8 @@ namespace VRCatNet
 
       obsRecordToggle.Content = "*REC*";
       ObsRequest("StopRecord");
+
+      textInput.Focus(FocusState.Programmatic);
     }
 
     private void ObsRecordToggle_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
@@ -539,6 +548,7 @@ namespace VRCatNet
       obsPauseToggle.Content = "resume\nrecording";
       ObsRequest("PauseRecord");
 
+      textInput.Focus(FocusState.Programmatic);
     }
 
     private void ObsPauseToggle_Unchecked(object sender, Windows.UI.Xaml.RoutedEventArgs e)
@@ -546,6 +556,7 @@ namespace VRCatNet
       if (!OBSIsConnected) return;
       obsPauseToggle.Content = "pause\nrecording";
       ObsRequest("ResumeRecord");
+      textInput.Focus(FocusState.Programmatic);
     }
 
     private async void ObsRequest(string command)
@@ -605,6 +616,32 @@ namespace VRCatNet
       }
     }
 
+    public string GenerateAuthenticationString(string password, string salt, string challenge)
+    {
+      // Convert the salt and challenge from Base64 to byte arrays
+      byte[] saltBytes = Convert.FromBase64String(salt);
+      byte[] challengeBytes = Convert.FromBase64String(challenge);
+
+      // Concatenate the password and salt
+      //string passwordAndSalt = password + Encoding.UTF8.GetString(saltBytes);
+      string passwordAndSalt = password + saltBytes;
+
+      // Generate a SHA256 hash of the password and salt, and Base64 encode it
+      byte[] passwordAndSaltBytes = Encoding.UTF8.GetBytes(passwordAndSalt);
+      byte[] passwordAndSaltHash = SHA256.Create().ComputeHash(passwordAndSaltBytes);
+      string base64Secret = Convert.ToBase64String(passwordAndSaltHash);
+
+      // Concatenate the base64 secret and challenge
+      string secretAndChallenge = base64Secret + Encoding.UTF8.GetString(challengeBytes);
+
+      // Generate a SHA256 hash of the secret and challenge, and Base64 encode it
+      byte[] secretAndChallengeBytes = Encoding.UTF8.GetBytes(secretAndChallenge);
+      byte[] secretAndChallengeHash = SHA256.Create().ComputeHash(secretAndChallengeBytes);
+      string authenticationString = Convert.ToBase64String(secretAndChallengeHash);
+
+      return authenticationString;
+    }
+
     private void WebSocket_MessageReceived(Windows.Networking.Sockets.MessageWebSocket sender, Windows.Networking.Sockets.MessageWebSocketMessageReceivedEventArgs args)
     {
       int eventSubscriptions = 0; // Start with all event subscriptions disabled
@@ -635,35 +672,64 @@ namespace VRCatNet
           if (message.op == 0)
           {
             // Extract the rpcVersion from the Hello message
-            // Try to access the rpcVersion property
-            Debug.WriteLine("Got message using MessageWebSocket: " + messageString);
-            try
+            if (message.d.authentication != null)
             {
               int rpcVersion = message.d.rpcVersion;
               Console.WriteLine(rpcVersion);
 
+              PasswordVault vault = new PasswordVault();
+              string password = GetCredential(vault, "OBSPassword");
+
+              var authtoken = GenerateAuthenticationString(password, message.d.authentication.salt, message.d.authentication.challenge);
               // Create Identify message
               var identifyMessage = new
               {
                 d = new
                 {
                   rpcVersion = rpcVersion,
-                  eventSubscriptions = eventSubscriptions
+                  eventSubscriptions = eventSubscriptions,
+                  authentication = authtoken
                   // Add appropriate session parameters here
                 },
                 op = 1
               };
-
-              // Convert Identify message to JSON
               var identifyMessageJson = JsonConvert.SerializeObject(identifyMessage);
 
               // Send the Identify message
               SendMessageUsingMessageWebSocketAsync(identifyMessageJson).Wait();
             }
-            catch (RuntimeBinderException ex)
+            else
             {
-              Console.WriteLine("Failed to access rpcVersion property: " + ex.Message);
+              Debug.WriteLine("No Auth");
+              Debug.WriteLine("Got message using MessageWebSocket: " + messageString);
+              try
+              {
+                int rpcVersion = message.d.rpcVersion;
+                Console.WriteLine(rpcVersion);
+
+                // Create Identify message
+                var identifyMessage = new
+                {
+                  d = new
+                  {
+                    rpcVersion = rpcVersion,
+                    eventSubscriptions = eventSubscriptions
+                    // Add appropriate session parameters here
+                  },
+                  op = 1
+                };
+                var identifyMessageJson = JsonConvert.SerializeObject(identifyMessage);
+
+                // Send the Identify message
+                SendMessageUsingMessageWebSocketAsync(identifyMessageJson).Wait();
+              }
+              catch (RuntimeBinderException ex)
+              {
+                Console.WriteLine("Failed to access rpcVersion property: " + ex.Message);
+              }
             }
+
+            // Convert Identify message to JSON
           }
 
           // CHeck if the message is connection validated response

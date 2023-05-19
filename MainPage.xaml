@@ -72,16 +72,16 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
                 <Button x:Name="changeChannels"         Grid.Row="0"  Content="Change&#xA;Channel" Width="85" HorizontalAlignment="Center" VerticalAlignment="Center" IsEnabled="False"/>
-                <Button x:Name="oscTriggers"            Grid.Row="1"  Content="Osc EP" Margin="5,2,5,2" HorizontalAlignment="Stretch" Width="85" VerticalAlignment="Stretch" IsEnabled="False"/>
+                <Button x:Name="oscTriggers"            Grid.Row="1"  Content="Osc EP" Margin="5,2,5,2" HorizontalAlignment="Stretch" Width="85" VerticalAlignment="Stretch" IsEnabled="False" Visibility="Collapsed"/>
                 <Button x:Name="dropGame"               Grid.Row="2"  Content="drop" Margin="5,2,5,2" HorizontalAlignment="Stretch" Width="85" VerticalAlignment="Stretch" IsEnabled="False"/>
-                <Button x:Name="ttvPoints"              Grid.Row="3"  Content="ttv points" Margin="5,2,5,2" HorizontalAlignment="Stretch" Width="85" VerticalAlignment="Stretch" IsEnabled="False"/>
-                <Button x:Name="twitchPrediction"       Grid.Row="4"  Content="prediction" Margin="5,2,5,2" HorizontalAlignment="Stretch" Width="85" VerticalAlignment="Stretch" IsEnabled="False"/>
-                <Button x:Name="twitchPoll"             Grid.Row="5"  Content="new poll" Margin="5,2,5,2" HorizontalAlignment="Stretch" Width="85" VerticalAlignment="Stretch" IsEnabled="False"/>
-                <Button x:Name="musicPanel"             Grid.Row="6"  Content="SR Queue" Margin="5,2,5,2" Width="85" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsEnabled="False"/>
+                <Button x:Name="ttvPoints"              Grid.Row="3"  Content="ttv points" Margin="5,2,5,2" HorizontalAlignment="Stretch" Width="85" VerticalAlignment="Stretch" IsEnabled="False" Visibility="Collapsed"/>
+                <Button x:Name="twitchPrediction"       Grid.Row="4"  Content="prediction" Margin="5,2,5,2" HorizontalAlignment="Stretch" Width="85" VerticalAlignment="Stretch" IsEnabled="False" Visibility="Collapsed"/>
+                <Button x:Name="twitchPoll"             Grid.Row="5"  Content="new poll" Margin="5,2,5,2" HorizontalAlignment="Stretch" Width="85" VerticalAlignment="Stretch" IsEnabled="False" Visibility="Collapsed"/>
+                <Button x:Name="musicPanel"             Grid.Row="6"  Content="SR Queue" Margin="5,2,5,2" Width="85" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsEnabled="False" Visibility="Collapsed"/>
                 <Button x:Name="sceneSelector"          Grid.Row="7"  Content="Sources /&#xA; Scenes" Margin="5,2,5,2" HorizontalAlignment="Stretch" Width="85" VerticalAlignment="Stretch" IsEnabled="False"/>
                 <Button x:Name="obsConfig"              Grid.Row="8"  Content="OBS Config" Width="90" HorizontalAlignment="Center" Margin="0,2,0,2"/>
                 <Button x:Name="makeClip"               Grid.Row="9"  Content="CLIP" Width="90" HorizontalAlignment="Center" Margin="0,2,0,2" IsEnabled="False"/>
-                <ToggleButton x:Name="obsRecordToggle"  Grid.Row="10" Content="*REC*" Width="90" HorizontalAlignment="Center" Margin="0,2,0,2" IsEnabled="False" Background="#33FF578D" Foreground="#FF5C9AFF"/>
+                <ToggleButton x:Name="obsRecordToggle"  Grid.Row="10" Content="*REC*" Width="90" HorizontalAlignment="Center" Margin="0,2,0,2" IsEnabled="False" Background="#33FF3A79" Foreground="#FFF8CEFF"/>
                 <ToggleButton x:Name="obsPauseToggle"   Grid.Row="11" Content="pause&#xA;recording" Width="90" HorizontalAlignment="Center" Margin="0,2,0,2" VerticalAlignment="Stretch" Background="#330033FF" IsEnabled="False" FontWeight="Bold"/>
             </Grid>
         </Grid>
@@ -121,16 +121,16 @@
 
             <controls:WrapPanel RenderTransformOrigin="0.502,0.234" Height="60">
                 <Button x:Name="clearOscEndpointButton" Content="Yeet" Margin="5" Height="50"/>
-                <local:CustomToggleButton x:Name="toggleTyping" Content="Typing" Margin="5" Height="50" />
+                <local:CustomToggleButton x:Name="toggleTyping" Content="Typing" Margin="5" Height="50" Checked="toggleTyping_Checked" Unchecked="toggleTyping_Unchecked"/>
                 <ToggleButton x:Name="toggleAudio" Content="Pop!" Margin="5" Checked="toggleAudio_Checked" Unchecked="toggleAudio_Unchecked" Height="50"/>
-                <ToggleButton x:Name="toggleOsc" Content="OSC" Margin="5" Height="50"/>
-                <ToggleButton x:Name="toggleTwitch" Content="Twitch" Margin="5" Height="50" IsEnabled="False"/>
+                <ToggleButton x:Name="toggleOsc" Content="OSC" Margin="5" Height="50" Checked="toggleOsc_Checked" Unchecked="toggleOsc_Unchecked"/>
+                <ToggleButton x:Name="toggleTwitch" Content="Twitch" Margin="5" Height="50" IsEnabled="False" Checked="toggleTwitch_Checked" Unchecked="toggleTwitch_Unchecked"/>
                 <Button x:Name="oauthButton" Content="Config" Margin="5" Click="oauthButton_Click" Height="50"/>
                 <ToggleButton x:Name="togglePauseScroll" Content="Pause Scroll" Margin="5" Height="50"/>
                 <Button x:Name="initTwitchButton" Content="Connect TTV" Click="initTwitchButton_Click" Margin="5" Height="50" />
             </controls:WrapPanel>
         </StackPanel>
-        <Button x:Name="gButton" Content="GAMBA" HorizontalAlignment="Center" Height="80" Grid.Row="1" Width="80" IsEnabled="False"/>
+        <Button x:Name="gButton" Content="* NUT *" HorizontalAlignment="Center" Height="80" Grid.Row="1" Width="80" IsEnabled="False" Background="#33DF20FF" Foreground="#FFCBD1FF"/>
         <!-- Text input and controls -->
 
     </Grid>
