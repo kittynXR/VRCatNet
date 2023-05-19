@@ -64,7 +64,7 @@ namespace VRCatNet
 
       if (localSettings.Values.TryGetValue("NutButton", out object nutButtonOption))
         NutButtonText = (string)nutButtonOption;
-      else
+      if (NutButtonText == "")
         NutButtonText = "!gamba all";
 
       if (firstTime) InitPasswordVault();

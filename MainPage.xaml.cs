@@ -449,8 +449,10 @@ namespace VRCatNet
         localSettings.Values["RememberOAuth"] = rememberOAuthCheckBox.IsChecked;
         localSettings.Values["NutButton"] = nutButtonInput.Text;
 
-        if(!string.IsNullOrWhiteSpace(nutButtonInput.Text))
+        if (!string.IsNullOrWhiteSpace(nutButtonInput.Text))
           NutButtonText = nutButtonInput.Text;
+        else
+          NutButtonText = "!gamba all";
 
         textInput.Focus(FocusState.Programmatic);
       }
