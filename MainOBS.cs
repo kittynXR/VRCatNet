@@ -61,7 +61,7 @@ namespace VRCatNet
     public StackPanel stackPanel { get; set; }
 
     private bool obsAutoConnect = false;
-    private bool obsStoreAuth = false;
+    //private bool obsStoreAuth = false;
     private string obsPassword;
     private bool OBSIsConnected = false;
     private bool OBSReplayEnabled = false;
@@ -209,7 +209,8 @@ namespace VRCatNet
           obsReplay.Content = "Start Replay Buffer";
           ObsRequest("StopReplayBuffer");
           OBSReplayEnabled= false;
-          if(!twitchFullAuth || !twitchIsConnected)
+          //if(!twitchFullAuth || !twitchIsConnected)
+          if(!twitchIsConnected)
             makeClip.IsEnabled = false;
         }
       };

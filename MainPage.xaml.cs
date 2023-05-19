@@ -41,7 +41,8 @@ namespace VRCatNet
       {
         ObsRequest("SaveReplayBuffer");
       }
-      if(twitchIsConnected && twitchFullAuth)
+      //if(twitchIsConnected && twitchFullAuth)
+      if(twitchIsConnected)
       {
         // TODO:  make this a function
       }

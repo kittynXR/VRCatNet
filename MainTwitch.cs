@@ -36,7 +36,7 @@ namespace VRCatNet
 
     private string currentChannel;
     private bool twitchIsConnected;
-    private bool twitchFullAuth;
+    //private bool twitchFullAuth;
     private bool twitchAutoConnect;
     private bool twitchStoreAuth;
     private string twitchOAuthKey;
@@ -104,11 +104,11 @@ namespace VRCatNet
       dropGame.IsEnabled = btnState;
       gButton.IsEnabled = btnState;
 
-      if(twitchFullAuth)
-      {
-        twitchPrediction.IsEnabled = btnState;
-        twitchPoll.IsEnabled = btnState;
-      }
+      //if(twitchFullAuth)
+      //{
+      //  twitchPrediction.IsEnabled = btnState;
+      //  twitchPoll.IsEnabled = btnState;
+      //}
     }
 
     private async void ChangeChannels_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
