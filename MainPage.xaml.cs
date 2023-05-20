@@ -10,10 +10,7 @@ using CoreOSC;
 using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
-using LibVLCSharp.Shared;
 using Windows.Security.Credentials;
-//using LibVLCSharp.Platforms.Windows;
-//using LibVLCSharp.Shared;
 
 //////////
 /////

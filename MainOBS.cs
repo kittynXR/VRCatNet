@@ -62,7 +62,7 @@ namespace VRCatNet
 
     private bool obsAutoConnect = false;
     //private bool obsStoreAuth = false;
-    private string obsPassword;
+    //private string obsPassword;
     private bool OBSIsConnected = false;
     private bool OBSReplayEnabled = false;
     private string selectedSceneName;

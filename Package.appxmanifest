@@ -7,15 +7,15 @@
   IgnorableNamespaces="uap mp">
 
   <Identity
-    Name="f4edb66a-8478-4238-85ba-0e293f394019"
-    Publisher="CN=kittyn"
-    Version="1.0.0.0" />
+    Name="10087KittynVR.VRCatNet"
+    Publisher="CN=ECA66EE8-D822-49C1-A95B-51566C94F849"
+    Version="1.0.4.0" />
 
-  <mp:PhoneIdentity PhoneProductId="f4edb66a-8478-4238-85ba-0e293f394019" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
+  <mp:PhoneIdentity PhoneProductId="3bb7ab59-f9bd-4f3f-a6ee-799bbbe10b19" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 
   <Properties>
     <DisplayName>VRCatNet</DisplayName>
-    <PublisherDisplayName>kittyn</PublisherDisplayName>
+    <PublisherDisplayName>Kittyn VR</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
 
