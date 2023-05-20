@@ -1,0 +1,9 @@
+jobs:
+- job: HJob
+  displayName: 'h job'
+  pool:
+    name: BlenderBuilder
+    demands:
+    - Agent.Version -gtVersion 3.220.2
+  steps:
+  - script: echo Hello, world!
