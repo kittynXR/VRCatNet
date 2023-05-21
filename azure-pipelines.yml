@@ -3,11 +3,12 @@
 # Add steps that test and distribute an app, save build artifacts, and more:
 # https://aka.ms/yaml
 
+
 trigger:
 - master
 
 pool:
-  name: 'BlenderBuilder'
+  name: 'BlenderBuildz'
   vmImage: 'windows-latest'
 
 variables:
@@ -15,17 +16,36 @@ variables:
   buildPlatform: 'x86|x64|ARM'
   buildConfiguration: 'Release'
   appxPackageDir: '$(build.artifactStagingDirectory)\AppxPackages\\'
+  appName: 'VRCatNet'
 
 steps:
 - task: NuGetToolInstaller@1
+#- powershell: |
+#    $csprojPath = 'path\to\your\project.csproj'
+#    $csproj = [xml](Get-Content $csprojPath)
+#    $assemblyName = $csproj.Project.PropertyGroup.AssemblyName
+#    echo "##vso[task.setvariable variable=appName]$assemblyName"
+#  displayName: Get app name
+
+- powershell: |
+    $appxPath = Get-ChildItem "$(appxPackageDir)\VRCatNet*.appx" | Sort-Object LastAccessTime -Descending | Select-Object -First 1
+    echo "##vso[task.setvariable variable=appxPath]$appxPath"
+  displayName: Get appx file path
+
+- powershell: |
+    $windowsKitPath = "C:\Program Files (x86)\Windows Kits\10\App Certification Kit"
+    & "$windowsKitPath\appcert.exe" reset
+    & "$windowsKitPath\appcert.exe" test -appx "$appxPath" -reportoutputpath "$(Build.ArtifactStagingDirectory)\ackreport.xml"
+  displayName: Run Windows App Certification Kit
 
 - task: NuGetCommand@2
   inputs:
     restoreSolution: '$(solution)'
+    
 
 - task: VSBuild@1
   inputs:
-    platform: 'x86'
+    platform: 'x64'
     solution: '$(solution)'
     configuration: '$(buildConfiguration)'
     msbuildArgs: '/p:AppxBundlePlatforms="$(buildPlatform)" /p:AppxPackageDir="$(appxPackageDir)" /p:AppxBundle=Always /p:UapAppxPackageBuildMode=StoreUpload'
