@@ -49,7 +49,7 @@ namespace VRCatNet
 
     private UDPSender oscSender;
     private bool pauseScroll;
-    private string NutButtonText;
+    private string NutButtonText = "";
 
     private Dictionary<string, BitmapImage> _emoteCache = new Dictionary<string, BitmapImage>();
 
@@ -65,7 +65,7 @@ namespace VRCatNet
       if (localSettings.Values.TryGetValue("NutButton", out object nutButtonOption))
         NutButtonText = (string)nutButtonOption;
       if (NutButtonText == "")
-        NutButtonText = "!gamba all";
+        NutButtonText = "Nut";
 
       if (firstTime) InitPasswordVault();
 
@@ -320,7 +320,10 @@ namespace VRCatNet
     private void OnSuspending(object sender, SuspendingEventArgs e)
     {
       var localSettings = ApplicationData.Current.LocalSettings;
-      var storedOAuthOption = (bool)localSettings.Values["RememberOAuth"];
+      var storedOAuthOption = false;
+
+      if (localSettings.Values.TryGetValue("RememberOAuth", out object OAuthOption))
+         storedOAuthOption = (bool)OAuthOption;
 
       if (storedOAuthOption == false)
         localSettings.Values["OAuthKey"] = "";

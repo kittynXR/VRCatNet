@@ -322,7 +322,7 @@ namespace VRCatNet
       };
 
       var nutButtonInput = new TextBox
-      { PlaceholderText = "Nut button: default ⇾ !gamba all", Text = storedNutButton ?? "" };
+      { PlaceholderText = "Nut button: default ⇾ Nut", Text = storedNutButton ?? "" };
 
       var oscAddressInput = new TextBox
       { PlaceholderText = "OSC address: default ⇾ 127.0.0.1", Text = storedOscAddress ?? "" };

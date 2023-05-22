@@ -430,7 +430,6 @@ namespace VRCatNet
       twitchClient.OnMessageSent -= TwitchClient_OnMessageSent;
       twitchClient.OnMessageReceived -= TwitchClient_OnMessageReceived;
       twitchClient.OnConnected -= TwitchClient_OnConnected;
-      twitchClient.OnDisconnected -= TwitchClient_OnDisconnected;
       twitchClient.OnJoinedChannel -= TwitchClient_OnJoinedChannel;
       twitchClient.OnLeftChannel -= TwitchClient_OnLeftChannel;
 
@@ -438,29 +437,23 @@ namespace VRCatNet
       twitchClient.OnReconnected -= TwitchClient_OnReconnected;
 
       twitchClient.Disconnect();
-      twitchClient = null;
     }
 
     private async Task ConnectTwitchClientAsync(TwitchClient twitchClient)
     {
-      TaskCompletionSource<bool> tcs = new TaskCompletionSource<bool>();
+      TaskCompletionSource<bool> connectedTcs = new TaskCompletionSource<bool>();
+      TaskCompletionSource<bool> joinedTcs = new TaskCompletionSource<bool>();
 
       void OnConnected(object sender, OnConnectedArgs e)
       {
         twitchClient.OnConnected -= OnConnected;
-        tcs.SetResult(true);
+        connectedTcs.SetResult(true);
       }
 
-      async void OnJoinedChannel(object sender, OnJoinedChannelArgs e)
+      void OnJoinedChannel(object sender, OnJoinedChannelArgs e)
       {
         twitchClient.OnJoinedChannel -= OnJoinedChannel;
-        await Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
-            () =>
-            {
-              //UpdateTextHistory($"Joined channel: {e.Channel}\n");
-              //sendButton.IsEnabled = true;
-              ScrollToBottom();
-            });
+        joinedTcs.SetResult(true);
       }
 
       twitchClient.OnConnected += OnConnected;
@@ -477,7 +470,7 @@ namespace VRCatNet
         UpdateTextHistory("Unable to connect to TTV. . .");
       }
 
-      await tcs.Task;
+      await Task.WhenAll(connectedTcs.Task, joinedTcs.Task);
     }
 
     private async void TwitchClient_OnConnected(object sender, OnConnectedArgs e)
@@ -526,7 +519,8 @@ namespace VRCatNet
 
       if(twitchClient != null)
       {
-        ShutdownTwitchClient();
+        twitchClient.OnDisconnected -= TwitchClient_OnDisconnected;
+        twitchClient = null;
       }
       twitchIsConnected = false;
     }
@@ -571,6 +565,7 @@ namespace VRCatNet
           e.ChatMessage.Username.Equals(twitchBroadcasterName, StringComparison.OrdinalIgnoreCase))
       {
         messageSentByApp = false;
+        ScrollToBottom();
         return;
       }
 
