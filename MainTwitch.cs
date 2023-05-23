@@ -1,5 +1,4 @@
-﻿
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Threading.Tasks;
 using System;
 using System.IO;
@@ -10,21 +9,12 @@ using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Media.Imaging;
 using TwitchLib.Api;
-using TwitchLib.Api.Auth;
 using TwitchLib.Client;
 using TwitchLib.Client.Events;
 using TwitchLib.Client.Models;
 using TwitchLib.Communication.Events;
-using TwitchLib.Communication.Clients;
-using TwitchLib.Communication.Models;
 using TwitchLib.Api.Core.Enums;
 using System.Collections.Generic;
-using Windows.ApplicationModel.Resources.Core;
-using System.Collections.ObjectModel;
-using Newtonsoft.Json;
-using Microsoft.UI.Xaml.Controls;
-using System.Linq;
-using System.Windows.Input;
 using Windows.Security.Credentials;
 
 namespace VRCatNet
@@ -41,6 +31,7 @@ namespace VRCatNet
     private bool twitchStoreAuth;
     private string twitchOAuthKey;
     private string twitchBroadcasterName;
+    private bool didShutdown;
 
     private List<StackPanel> gameButtonPanels;
 
@@ -436,7 +427,7 @@ namespace VRCatNet
       twitchClient.OnConnectionError -= TwitchClient_OnConnectionError;
       twitchClient.OnReconnected -= TwitchClient_OnReconnected;
 
-      twitchClient.Disconnect();
+      didShutdown = true;
     }
 
     private async Task ConnectTwitchClientAsync(TwitchClient twitchClient)
@@ -520,7 +511,16 @@ namespace VRCatNet
       if(twitchClient != null)
       {
         twitchClient.OnDisconnected -= TwitchClient_OnDisconnected;
-        twitchClient = null;
+        if(didShutdown)
+        {
+          twitchClient = null;
+          didShutdown = false;
+        }
+        else
+        {
+          ShutdownTwitchClient();
+          twitchClient = null;
+        }
       }
       twitchIsConnected = false;
     }

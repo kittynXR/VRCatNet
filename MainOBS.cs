@@ -7,12 +7,10 @@ using System.Diagnostics;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using Windows.Security.Credentials;
 using Windows.Storage;
 using Windows.Storage.Streams;
-using Windows.System;
 using Windows.UI;
 using Windows.UI.Core;
 using Windows.UI.Xaml;
@@ -663,25 +661,25 @@ namespace VRCatNet
           string read = reader.ReadString(reader.UnconsumedBufferLength);
 
           // Parse the received message
-          var message = JsonConvert.DeserializeObject<dynamic>(read);
+          var message = JsonConvert.DeserializeObject<JObject>(read);
           string messageString = JsonConvert.SerializeObject(message);
 
           // Print out the message to the debug output
           Debug.WriteLine("In got message: " + messageString);
 
           // Check if the message is a Hello message
-          if (message.op == 0)
+          if (message["op"] != null && message["op"].Value<int>() == 0)
           {
             // Extract the rpcVersion from the Hello message
-            if (message.d.authentication != null)
+            if (message["d"]["authentication"] != null)
             {
-              int rpcVersion = message.d.rpcVersion;
+              int rpcVersion = message["d"]["rpcVersion"].Value<int>();
               Console.WriteLine(rpcVersion);
 
               PasswordVault vault = new PasswordVault();
               string password = GetCredential(vault, "OBSPassword");
 
-              var authtoken = GenerateAuthenticationString(password, message.d.authentication.salt, message.d.authentication.challenge);
+              var authtoken = GenerateAuthenticationString(password, message["d"]["authentication"]["salt"].Value<string>(), message["d"]["authentication"]["challenge"].Value<string>());
               // Create Identify message
               var identifyMessage = new
               {
@@ -705,7 +703,7 @@ namespace VRCatNet
               Debug.WriteLine("Got message using MessageWebSocket: " + messageString);
               try
               {
-                int rpcVersion = message.d.rpcVersion;
+                int rpcVersion = message["d"]["rpcVersion"].Value<int>();
                 Console.WriteLine(rpcVersion);
 
                 // Create Identify message
@@ -721,7 +719,6 @@ namespace VRCatNet
                 };
                 var identifyMessageJson = JsonConvert.SerializeObject(identifyMessage);
 
-                // Send the Identify message
                 SendMessageUsingMessageWebSocketAsync(identifyMessageJson).Wait();
               }
               catch (RuntimeBinderException ex)
@@ -729,35 +726,26 @@ namespace VRCatNet
                 Console.WriteLine("Failed to access rpcVersion property: " + ex.Message);
               }
             }
-
             // Convert Identify message to JSON
           }
 
           // CHeck if the message is connection validated response
-          if (message.op == 2)
+          if (message["op"] != null && message["op"].Value<int>() == 2)
           {
-
-            Debug.WriteLine("Got message using MessageWebSocket: " + messageString);
+            //Debug.WriteLine("Got message using MessageWebSocket: " + messageString);
           }
           
-          if (message.op == 7)
+          if (message["op"] != null && message["op"].Value<int>() == 7)
           {
-            if ((message.d.requestType == "GetSceneList") && (message.d.responseData != null))
+            if ((message["d"]["requestType"] != null && message["d"]["requestType"].Value<string>() == "GetSceneList") && (message["d"]["responseData"] != null))
             {
-              SceneSelector(JsonConvert.SerializeObject(message.d.responseData));
+              SceneSelector(JsonConvert.SerializeObject(message["d"]["responseData"]));
             }
-            if ((message.d.requestType == "GetSceneItemList") && (message.d.responseData != null))
+            if ((message["d"]["requestType"] != null && message["d"]["requestType"].Value<string>() == "GetSceneItemList") && (message["d"]["responseData"] != null))
             {
-              //var jObject = JObject.Parse(JsonConvert.SerializeObject(message.d.responseData));
-              //var sceneItems = jObject["sceneItems"] as IEnumerable<JToken>;
-              //var sourceNames = sceneItems.Select(item => item["sourceName"].ToString()).ToList();
-              //Debug.WriteLine("Got message using MessageWebSocket: " + JsonConvert.SerializeObject(sourceNames));
-              //OnSourcesDataReceived?.Invoke(JsonConvert.SerializeObject(sourceNames));
-              OnSourcesDataReceived?.Invoke(JsonConvert.SerializeObject(message.d.responseData));
+              OnSourcesDataReceived?.Invoke(JsonConvert.SerializeObject(message["d"]["responseData"]));
             }
-
-
-            Debug.WriteLine("Got message using MessageWebSocket: " + messageString);
+            //Debug.WriteLine("Got message using MessageWebSocket: " + messageString);
           }
 
         }
@@ -944,14 +932,23 @@ namespace VRCatNet
 
     private async Task SendMessageUsingMessageWebSocketAsync(string message)
     {
-      using (var dataWriter = new DataWriter(this.messageWebSocket.OutputStream))
+      try
       {
-        dataWriter.WriteString(message);
-        await dataWriter.StoreAsync();
-        dataWriter.DetachStream();
+        using (var dataWriter = new DataWriter(this.messageWebSocket.OutputStream))
+        {
+          dataWriter.WriteString(message);
+          await dataWriter.StoreAsync();
+          dataWriter.DetachStream();
+        }
+        Debug.WriteLine("Sending message using MessageWebSocket: " + message);
       }
-      Debug.WriteLine("Sending message using MessageWebSocket: " + message);
+      catch (Exception ex)
+      {
+        Debug.WriteLine($"Failed to send message using MessageWebSocket: {ex}");
+        // Handle or rethrow the exception as needed.
+      }
     }
+
 
   }
 }

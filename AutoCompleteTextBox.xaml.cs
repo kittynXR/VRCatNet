@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
-using Windows.ApplicationModel.Store.Preview.InstallControl;
 using TwitchLib.Api;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -11,8 +10,6 @@ using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Imaging;
-using TwitchLib.Api.Helix.Models.Users.GetUsers;
-using TwitchLib.Client;
 
 namespace VRCatNet
 {
