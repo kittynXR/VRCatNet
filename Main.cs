@@ -1,28 +1,16 @@
 ﻿using Windows.UI.Core;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
-using Windows.UI.Xaml.Controls.Primitives;
-using Windows.UI.Xaml.Data;
-using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
-using Windows.UI.Xaml.Navigation;
 using CoreOSC;
-using TwitchLib.Client;
-using TwitchLib.Client.Events;
 using TwitchLib.Client.Models;
-using TwitchLib.Communication.Events;
-using System.ComponentModel;
-using System.Net.Http;
-using System.Runtime.CompilerServices;
 using Windows.UI.Xaml.Media.Imaging;
-using System.IO;
 using System.Collections.ObjectModel;
 using Windows.UI.Xaml.Documents;
 using System.Collections.Generic;
 using System.Threading;
 using System;
 using System.Diagnostics;
-using System.Threading.Tasks;
 using Windows.Storage;
 using System.Linq;
 using Windows.ApplicationModel;
@@ -267,9 +255,10 @@ namespace VRCatNet
     {
       if (!pauseScroll)
       {
+        textHistory.ScrollIntoView(textHistory.Items.LastOrDefault());
         // Scroll the textHistoryScrollViewer to the bottom
-        var verticalOffset = textHistoryScrollViewer.ExtentHeight - textHistoryScrollViewer.ViewportHeight;
-        textHistoryScrollViewer.ChangeView(null, verticalOffset, null, true);
+        //var verticalOffset = textHistoryScrollViewer.ExtentHeight - textHistoryScrollViewer.ViewportHeight;
+        //textHistoryScrollViewer.ChangeView(null, verticalOffset, null, true);
         textInput.Focus(FocusState.Programmatic);
       }
     }

@@ -9,7 +9,6 @@ using Windows.UI.Xaml.Navigation;
 using CoreOSC;
 using System;
 using System.Diagnostics;
-using System.Threading.Tasks;
 using Windows.Security.Credentials;
 
 //////////
@@ -141,6 +140,7 @@ namespace VRCatNet
       else
       {
         ShutdownTwitchClient();
+        twitchClient.Disconnect();
         twitchIsConnected = false;
         UpdateTextHistory("TTV Disconnected. . .");
         initTwitchButton.Content = "Connect TTV";
