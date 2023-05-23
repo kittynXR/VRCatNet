@@ -69,6 +69,8 @@ namespace VRCatNet
       // Add event handlers for the send button and return key
       sendButton.Click += SendButton_Click;
 
+      //textHistory.GotFocus          += TextHistory_GotFocus;
+      //textHistory.PointerPressed    += TextHistory_PointerPressed;
       makeClip.Click                += makeClip_Click;
       oscTriggers.Click             += OscTriggers_Click;
       gButton.Click                 += gButton_Click;
@@ -81,6 +83,16 @@ namespace VRCatNet
 
       UpdateCharacterCounter();
     }
+
+    //private void TextHistory_GotFocus(object sender, RoutedEventArgs e)
+    //{
+    //   textInput.Focus(FocusState.Programmatic);
+    //}
+
+    //private void TextHistory_PointerPressed(object sender, Windows.UI.Xaml.Input.PointerRoutedEventArgs e)
+    //{
+    //   //textInput.Focus(FocusState.Programmatic);
+    //}
 
     private void OscTriggers_Click(object sender, RoutedEventArgs e)
     {
@@ -154,6 +166,7 @@ namespace VRCatNet
         }
         args.Handled = true;
       }
+      ScrollToBottom();
     }
 
     private void LoadChatItem(ListViewItem container, ChatItem chatItem, ContainerContentChangingEventArgs args)
@@ -255,13 +268,15 @@ namespace VRCatNet
     {
       if (!pauseScroll)
       {
-        textHistory.ScrollIntoView(textHistory.Items.LastOrDefault());
-        // Scroll the textHistoryScrollViewer to the bottom
-        //var verticalOffset = textHistoryScrollViewer.ExtentHeight - textHistoryScrollViewer.ViewportHeight;
-        //textHistoryScrollViewer.ChangeView(null, verticalOffset, null, true);
-        textInput.Focus(FocusState.Programmatic);
+        var lastItem = textHistory.Items.LastOrDefault();
+        if (lastItem != null)
+        {
+          textHistory.ScrollIntoView(lastItem);
+          textInput.Focus(FocusState.Programmatic);
+        }
       }
     }
+
 
     private void SendMessage()
     {
