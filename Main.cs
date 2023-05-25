@@ -16,6 +16,7 @@ using System.Linq;
 using Windows.ApplicationModel;
 using Windows.UI;
 using Windows.Security.Credentials;
+using System.Threading.Tasks;
 
 namespace VRCatNet
 {
@@ -69,8 +70,6 @@ namespace VRCatNet
       // Add event handlers for the send button and return key
       sendButton.Click += SendButton_Click;
 
-      //textHistory.GotFocus          += TextHistory_GotFocus;
-      //textHistory.PointerPressed    += TextHistory_PointerPressed;
       makeClip.Click                += makeClip_Click;
       oscTriggers.Click             += OscTriggers_Click;
       gButton.Click                 += gButton_Click;
@@ -80,19 +79,7 @@ namespace VRCatNet
 
       Application.Current.Suspending += new SuspendingEventHandler(OnSuspending);
       Window.Current.Activated += OnActivated;
-
-      UpdateCharacterCounter();
     }
-
-    //private void TextHistory_GotFocus(object sender, RoutedEventArgs e)
-    //{
-    //   textInput.Focus(FocusState.Programmatic);
-    //}
-
-    //private void TextHistory_PointerPressed(object sender, Windows.UI.Xaml.Input.PointerRoutedEventArgs e)
-    //{
-    //   //textInput.Focus(FocusState.Programmatic);
-    //}
 
     private void OscTriggers_Click(object sender, RoutedEventArgs e)
     {
@@ -107,48 +94,48 @@ namespace VRCatNet
 
     private async void MainPage_Loaded(object sender, RoutedEventArgs e)
     {
-      var localSettings = ApplicationData.Current.LocalSettings;
-      InitializeOsc();
-      InitializeObs();
-
-      if (localSettings.Values.TryGetValue("AutoConnectTwitch", out object connectOption))
-        twitchAutoConnect = (bool)connectOption;
-      if (localSettings.Values.TryGetValue("RememberOAuth", out object oauthOption))
-        twitchStoreAuth = (bool)oauthOption;
-      if (localSettings.Values.TryGetValue("AutoConnectOBS", out object obsConnectOption))
-        obsAutoConnect = (bool)obsConnectOption;
-
-      if(obsAutoConnect)
+      try
       {
-        string OBSAddress   = "127.0.0.1";
-        string OBSPort      = "4455";
-        //PasswordVault vault = new PasswordVault();
-        //string OBSPassword  = GetOBSPassword(vault);
-        bool? SSLOption     = false;
+        var localSettings = ApplicationData.Current.LocalSettings;
+        InitializeOsc();
+        InitializeObs();
 
-        if (localSettings.Values.TryGetValue("OBSAddress", out object obsAddress) && !string.IsNullOrEmpty(obsAddress as string))
-          OBSAddress = obsAddress as string;
+        if (localSettings.Values.TryGetValue("AutoConnectTwitch", out object connectOption))
+          twitchAutoConnect = (bool)connectOption;
+        if (localSettings.Values.TryGetValue("RememberOAuth", out object oauthOption))
+          twitchStoreAuth = (bool)oauthOption;
+        if (localSettings.Values.TryGetValue("AutoConnectOBS", out object obsConnectOption))
+          obsAutoConnect = (bool)obsConnectOption;
 
-        if (localSettings.Values.TryGetValue("OBSPort", out object obsPort) && !string.IsNullOrEmpty(obsPort as string))
-          OBSPort = obsPort as string;
+        if (obsAutoConnect)
+        {
+          string OBSAddress = "127.0.0.1";
+          string OBSPort = "4455";
+          //PasswordVault vault = new PasswordVault();
+          //string OBSPassword  = GetOBSPassword(vault);
+          bool? SSLOption = false;
 
-        if (localSettings.Values.TryGetValue("SSLOption", out object useSSLOption) && useSSLOption != null)
-          SSLOption = (bool)useSSLOption;
+          if (localSettings.Values.TryGetValue("OBSAddress", out object obsAddress) && !string.IsNullOrEmpty(obsAddress as string))
+            OBSAddress = obsAddress as string;
 
-        OBSAddress = $"{(SSLOption ?? false ? "wss" : "ws")}://{OBSAddress}:{OBSPort}/";
-        await OBSConnect(OBSAddress);
-      }
-      if (twitchAutoConnect && twitchStoreAuth)  // auto connect enabled
-      {
-        try
+          if (localSettings.Values.TryGetValue("OBSPort", out object obsPort) && !string.IsNullOrEmpty(obsPort as string))
+            OBSPort = obsPort as string;
+
+          if (localSettings.Values.TryGetValue("SSLOption", out object useSSLOption) && useSSLOption != null)
+            SSLOption = (bool)useSSLOption;
+
+          OBSAddress = $"{(SSLOption ?? false ? "wss" : "ws")}://{OBSAddress}:{OBSPort}/";
+          await OBSConnect(OBSAddress);
+        }
+        if (twitchAutoConnect && twitchStoreAuth)  // auto connect enabled
         {
           await InitializeTwitchClient();
           initTwitchButton.Content = "Disconnect TTV";
         }
-        catch (Exception ex)
-        {
-          Debug.WriteLine($"initTwitchButton_Click exception: {ex.Message}");
-        }
+      }
+      catch (Exception ex)
+      {
+        Debug.WriteLine($"MainPage_Loaded exception: {ex.Message}");
       }
     }
 
@@ -162,11 +149,10 @@ namespace VRCatNet
         var chatItem = args.Item as ChatItem;
         if (container != null && chatItem != null)
         {
-          args.RegisterUpdateCallback(1, (s, e) => LoadChatItem(container, chatItem, e));
+          args.RegisterUpdateCallback(1, async (s, e) => await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => LoadChatItem(container, chatItem, e)));
         }
         args.Handled = true;
       }
-      ScrollToBottom();
     }
 
     private void LoadChatItem(ListViewItem container, ChatItem chatItem, ContainerContentChangingEventArgs args)
@@ -210,11 +196,10 @@ namespace VRCatNet
           }
         }
       }
-
       args.Handled = true;
     }
 
-    private async void UpdateTextHistory(string message, string username = "", IList<Emote> emotes = null)
+    private async Task UpdateTextHistory(string message, string username = "", IList<Emote> emotes = null)
     {
       var chatItem = new ChatItem { ChatElements = new ObservableCollection<ChatElement>() };
       chatItem.ChatElements.Add(new ChatElement { Text = $"{username}: " });
@@ -244,8 +229,11 @@ namespace VRCatNet
 
       try
       {
-        textHistory.Items.Add(chatItem);
-        textHistory.UpdateLayout();
+        await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+        {
+          textHistory.Items.Add(chatItem);
+          textHistory.UpdateLayout();
+        });
       }
       catch (Exception ex)
       {
@@ -253,32 +241,34 @@ namespace VRCatNet
       }
     }
 
-    private void UpdateCharacterCounter()
+    private async Task UpdateCharacterCounter()
     {
       var charactersRemaining = MaxCharacters - textInput.Text.Length;
-      characterCounter.Text = $"{charactersRemaining}/{MaxCharacters}";
 
-      if (charactersRemaining <= MaxCharacters * 0.15)
-        characterCounter.Foreground = new SolidColorBrush(Colors.Red);
-      else
-        characterCounter.Foreground = new SolidColorBrush(Colors.White);
+      await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+      {
+        characterCounter.Text = $"{charactersRemaining}/{MaxCharacters}";
+
+        if (charactersRemaining <= MaxCharacters * 0.15)
+          characterCounter.Foreground = new SolidColorBrush(Colors.Red);
+        else
+          characterCounter.Foreground = new SolidColorBrush(Colors.White);
+      });
     }
 
-    private void ScrollToBottom()
+    private async Task ScrollToBottom()
     {
       if (!pauseScroll)
       {
-        var lastItem = textHistory.Items.LastOrDefault();
-        if (lastItem != null)
+        await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
         {
-          textHistory.ScrollIntoView(lastItem);
+          textHistory.ScrollIntoView(textHistory.Items.LastOrDefault());
           textInput.Focus(FocusState.Programmatic);
-        }
+        });
       }
     }
 
-
-    private void SendMessage()
+    private async Task SendMessage()
     {
       if (textInput.Text == "") return;
       // Send message to Twitch chat if the toggle is on
@@ -312,13 +302,15 @@ namespace VRCatNet
         }
 
       // Update the text history with the sent message
-      UpdateTextHistory(textInput.Text, twitchBroadcasterName);
-      ScrollToBottom();
+      await UpdateTextHistory(textInput.Text, twitchBroadcasterName);
+      await ScrollToBottom();
 
       // Clear the text input
-      textInput.Text = "";
-
-      textInput.Focus(FocusState.Programmatic);
+      await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+        {
+          textInput.Text = "";
+          textInput.Focus(FocusState.Programmatic);
+        });
     }
 
     private void OnSuspending(object sender, SuspendingEventArgs e)
@@ -333,11 +325,11 @@ namespace VRCatNet
         localSettings.Values["OAuthKey"] = "";
     }
 
-    private void OnActivated(object sender, WindowActivatedEventArgs e)
+    private async void OnActivated(object sender, WindowActivatedEventArgs e)
     {
       if (e.WindowActivationState == CoreWindowActivationState.CodeActivated || e.WindowActivationState == CoreWindowActivationState.PointerActivated)
       {
-        ScrollToBottom();
+        await ScrollToBottom();
         textInput.Focus(FocusState.Programmatic);
       }
     }

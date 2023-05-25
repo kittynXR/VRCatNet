@@ -88,18 +88,13 @@ namespace VRCatNet
 
     private void ToggleTwitchButtonState(bool btnState)
     {
+
       ttvPoints.IsEnabled = btnState;
       toggleTwitch.IsEnabled = btnState;
       makeClip.IsEnabled = btnState;
       changeChannels.IsEnabled = btnState;
       dropGame.IsEnabled = btnState;
       gButton.IsEnabled = btnState;
-
-      //if(twitchFullAuth)
-      //{
-      //  twitchPrediction.IsEnabled = btnState;
-      //  twitchPoll.IsEnabled = btnState;
-      //}
     }
 
     private async void ChangeChannels_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
@@ -458,19 +453,22 @@ namespace VRCatNet
       }
       else
       {
-        UpdateTextHistory("Unable to connect to TTV. . .");
+        await UpdateTextHistory("Unable to connect to TTV. . .");
       }
 
       await Task.WhenAll(connectedTcs.Task, joinedTcs.Task);
     }
-
+//
+// change all these async voids to async Task or Task<T>
+//
     private async void TwitchClient_OnConnected(object sender, OnConnectedArgs e)
     {
       await Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
-          () =>
+          async () =>
           {
-            UpdateTextHistory($"Connected to Twitch chat.\n");
+            await UpdateTextHistory($"Connected to Twitch chat.\n");
             ToggleTwitchButtonState(true);
+            initTwitchButton.Content = "Disconnect TTV";
             toggleTwitch.IsChecked = true;
           });
     }
@@ -478,32 +476,32 @@ namespace VRCatNet
     private async void TwitchClient_OnJoinedChannel(object sender, OnJoinedChannelArgs e)
     {
       await Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
-          () =>
+          async () =>
           {
-            UpdateTextHistory($"Joined channel: {e.Channel}\n");
+            await UpdateTextHistory($"Joined channel: {e.Channel}\n");
             currentChannel = e.Channel;
             //sendButton.IsEnabled = true;
-            ScrollToBottom();
+            await ScrollToBottom();
           });
     }
 
     private async void TwitchClient_OnLeftChannel(object sender, OnLeftChannelArgs e)
     {
       await Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
-          () =>
+          async () =>
           {
-            UpdateTextHistory($"Parted channel: {e.Channel}\n");
+            await UpdateTextHistory($"Parted channel: {e.Channel}\n");
             //sendButton.IsEnabled = false;
-            ScrollToBottom();
+            await ScrollToBottom();
           });
     }
 
     private async void TwitchClient_OnDisconnected(object sender, OnDisconnectedEventArgs e)
     {
       await Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
-        () =>
+        async () =>
         {
-          UpdateTextHistory($"Disconnected from Twitch chat.\n");
+          await UpdateTextHistory($"Disconnected from Twitch chat.\n");
           ToggleTwitchButtonState(false);
           toggleTwitch.IsChecked = false;
         });
@@ -523,6 +521,11 @@ namespace VRCatNet
         }
       }
       twitchIsConnected = false;
+      await Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
+        () =>
+        {
+          initTwitchButton.Content = "Connect TTV";
+        });
     }
 
     private async Task<BitmapImage> GetEmoteImageAsync(string emoteUrl)
@@ -565,7 +568,7 @@ namespace VRCatNet
           e.ChatMessage.Username.Equals(twitchBroadcasterName, StringComparison.OrdinalIgnoreCase))
       {
         messageSentByApp = false;
-        ScrollToBottom();
+        await ScrollToBottom();
         return;
       }
 
@@ -573,15 +576,16 @@ namespace VRCatNet
       {
         if (Dispatcher.HasThreadAccess)
         {
-          UpdateTextHistory(e.ChatMessage.Message, e.ChatMessage.Username, e.ChatMessage.EmoteSet.Emotes);
-          ScrollToBottom();
+          await UpdateTextHistory(e.ChatMessage.Message, e.ChatMessage.Username, e.ChatMessage.EmoteSet.Emotes);
+          await ScrollToBottom();
         }
         else
         {
-          await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+          await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, 
+          async () =>
           {
-            UpdateTextHistory(e.ChatMessage.Message, e.ChatMessage.Username, e.ChatMessage.EmoteSet.Emotes);
-            ScrollToBottom();
+            await UpdateTextHistory(e.ChatMessage.Message, e.ChatMessage.Username, e.ChatMessage.EmoteSet.Emotes);
+            await ScrollToBottom();
           });
         }
       }
@@ -595,9 +599,9 @@ namespace VRCatNet
     {
       Debug.WriteLine($"Connection error: {e.Error.Message}");
       await Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
-          () =>
+          async () =>
           {
-            UpdateTextHistory($"Connection error: {e.Error.Message}\n");
+            await UpdateTextHistory($"Connection error: {e.Error.Message}\n");
           });
     }
 
@@ -605,9 +609,9 @@ namespace VRCatNet
     {
       Debug.WriteLine("Reconnected to Twitch chat.");
       await Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
-          () =>
+          async () =>
           {
-            UpdateTextHistory("Reconnected to Twitch chat.\n");
+            await UpdateTextHistory("Reconnected to Twitch chat.\n");
           });
     }
 

@@ -59,8 +59,6 @@ namespace VRCatNet
     public StackPanel stackPanel { get; set; }
 
     private bool obsAutoConnect = false;
-    //private bool obsStoreAuth = false;
-    //private string obsPassword;
     private bool OBSIsConnected = false;
     private bool OBSReplayEnabled = false;
     private string selectedSceneName;
@@ -71,7 +69,6 @@ namespace VRCatNet
     private void InitializeObs()
     {
       sceneSelector.Click += SceneSelector_Click;
-      //sourceSelector.Click += SourceSelector_Click;
       obsConfig.Click += ObsConfig_Click;
       obsRecordToggle.Click += ObsRecordToggle_Click;
       obsRecordToggle.Checked += ObsRecordToggle_Checked;
@@ -81,7 +78,7 @@ namespace VRCatNet
       obsPauseToggle.Unchecked += ObsPauseToggle_Unchecked;
     }
 
-    private async void ToggleObsButtonState(bool btnEnabled)
+    private async Task ToggleObsButtonState(bool btnEnabled)
     {
       await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
       {
@@ -193,19 +190,19 @@ namespace VRCatNet
         await OBSConnect(OBSAddress);
       };
 
-      obsReplay.Click += (s, args) =>
+      obsReplay.Click += async (s, args) =>
       {
         if (!OBSReplayEnabled)
         {
           obsReplay.Content = "Stop Replay Buffer";
-          ObsRequest("StartReplayBuffer");
+          await ObsRequest("StartReplayBuffer");
           makeClip.IsEnabled = true;
           OBSReplayEnabled = true;
         }
         else
         {
           obsReplay.Content = "Start Replay Buffer";
-          ObsRequest("StopReplayBuffer");
+          await ObsRequest("StopReplayBuffer");
           OBSReplayEnabled= false;
           //if(!twitchFullAuth || !twitchIsConnected)
           if(!twitchIsConnected)
@@ -261,12 +258,11 @@ namespace VRCatNet
       }
     }
 
-    private void SceneSelector_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
+    private async void SceneSelector_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
     {
       if (!OBSIsConnected) return;
 
-      RequestScenes();
-      //await OBSConnect(OBSAddress);
+      await RequestScenes();
     }
 
     private async void SceneSelector(string scenesString)
@@ -375,7 +371,7 @@ namespace VRCatNet
           }
 
           selectedSceneName = ((ToggleButton)sender).Content.ToString();
-          SetCurrentScene(selectedSceneName);
+          await SetCurrentScene(selectedSceneName);
 
           Debug.WriteLine("About to call RequestSources");
           // Retrieve sources for the selected scene
@@ -423,14 +419,14 @@ namespace VRCatNet
 
           var index = i;
 
-          toggleButton.Checked += (sender, args) =>
+          toggleButton.Checked += async (sender, args) =>
           {
-            SetSourceState(selectedSceneName, newSourcesData.sceneItems[index].sceneItemId, true);
+            await SetSourceState(selectedSceneName, newSourcesData.sceneItems[index].sceneItemId, true);
           };
 
-          toggleButton.Unchecked += (sender, args) =>
+          toggleButton.Unchecked += async (sender, args) =>
           {
-            SetSourceState(selectedSceneName, newSourcesData.sceneItems[index].sceneItemId, false);
+            await SetSourceState(selectedSceneName, newSourcesData.sceneItems[index].sceneItemId, false);
           };
 
           srcGrid.Children.Add(toggleButton);
@@ -478,14 +474,14 @@ namespace VRCatNet
 
           var index = i; // Create a new variable inside the loop
 
-          toggleButton.Checked += (sender, args) =>
+          toggleButton.Checked += async (sender, args) =>
           {
-            SetSourceState(selectedSceneName, sourcesData.sceneItems[index].sceneItemId, true);
+            await SetSourceState(selectedSceneName, sourcesData.sceneItems[index].sceneItemId, true);
           };
 
-          toggleButton.Unchecked += (sender, args) =>
+          toggleButton.Unchecked += async (sender, args) =>
           {
-            SetSourceState(selectedSceneName, sourcesData.sceneItems[index].sceneItemId, false);
+            await SetSourceState(selectedSceneName, sourcesData.sceneItems[index].sceneItemId, false);
           };
 
           grid.Children.Add(toggleButton);
@@ -512,17 +508,17 @@ namespace VRCatNet
       return await tcs.Task;
     }
 
-    private void ObsRecordToggle_Checked(object sender, Windows.UI.Xaml.RoutedEventArgs e)
+    private async void ObsRecordToggle_Checked(object sender, Windows.UI.Xaml.RoutedEventArgs e)
     {
       if (!OBSIsConnected) return;
 
       obsPauseToggle.IsEnabled = true;
       obsRecordToggle.Content = "STOP\nREC";
-      ObsRequest("StartRecord");
+      await ObsRequest("StartRecord");
       textInput.Focus(FocusState.Programmatic);
     }
 
-    private void ObsRecordToggle_Unchecked(object sender, Windows.UI.Xaml.RoutedEventArgs e)
+    private async void ObsRecordToggle_Unchecked(object sender, Windows.UI.Xaml.RoutedEventArgs e)
     {
       if (!OBSIsConnected) return;
 
@@ -530,7 +526,7 @@ namespace VRCatNet
       obsPauseToggle.IsChecked = false;
 
       obsRecordToggle.Content = "*REC*";
-      ObsRequest("StopRecord");
+      await ObsRequest("StopRecord"));
 
       textInput.Focus(FocusState.Programmatic);
     }
@@ -540,25 +536,25 @@ namespace VRCatNet
       //SetCurrentScene("Record");
     }
 
-    private void ObsPauseToggle_Checked(object sender, Windows.UI.Xaml.RoutedEventArgs e)
+    private async void ObsPauseToggle_Checked(object sender, Windows.UI.Xaml.RoutedEventArgs e)
     {
       if (!OBSIsConnected) return;
 
       obsPauseToggle.Content = "resume\nrecording";
-      ObsRequest("PauseRecord");
+      await ObsRequest("PauseRecord");
 
       textInput.Focus(FocusState.Programmatic);
     }
 
-    private void ObsPauseToggle_Unchecked(object sender, Windows.UI.Xaml.RoutedEventArgs e)
+    private async void ObsPauseToggle_Unchecked(object sender, Windows.UI.Xaml.RoutedEventArgs e)
     {
       if (!OBSIsConnected) return;
       obsPauseToggle.Content = "pause\nrecording";
-      ObsRequest("ResumeRecord");
+      await ObsRequest("ResumeRecord");
       textInput.Focus(FocusState.Programmatic);
     }
 
-    private async void ObsRequest(string command)
+    private async Task ObsRequest(string command)
     {
       string requestId = Guid.NewGuid().ToString();
 
@@ -605,8 +601,8 @@ namespace VRCatNet
         await connectTask;
 
         OBSIsConnected = true;
-        UpdateTextHistory($"Connected to OBS.\n");
-        ToggleObsButtonState(true);
+        await UpdateTextHistory($"Connected to OBS.\n");
+        await ToggleObsButtonState(true);
       }
       catch (Exception connectEx)
       {
@@ -760,7 +756,7 @@ namespace VRCatNet
       }
     }
 
-    private async void SendStreamCaption(string caption)
+    private async Task SendStreamCaption(string caption)
     {
       if (caption == null) return;
       if (!OBSIsConnected) return;
@@ -786,7 +782,7 @@ namespace VRCatNet
       await SendMessageUsingMessageWebSocketAsync(requestJson);
     }
 
-    private async void SetCurrentScene(string scene)
+    private async Task SetCurrentScene(string scene)
     {
       if (scene == null)
       {
@@ -818,7 +814,7 @@ namespace VRCatNet
       await SendMessageUsingMessageWebSocketAsync(requestJson);
     }
 
-    private async void SetSourceState(string scene, int source, bool sourceState)
+    private async Task SetSourceState(string scene, int source, bool sourceState)
     {
       if (scene == null)
       {
@@ -863,7 +859,7 @@ namespace VRCatNet
       }
     }
 
-    private async void RequestScenes()
+    private async Task RequestScenes()
     {
       // Create a new UUID for the request
       string requestId = Guid.NewGuid().ToString();
@@ -913,7 +909,7 @@ namespace VRCatNet
       await SendMessageUsingMessageWebSocketAsync(requestJson);
     }
 
-    private void WebSocket_Closed(Windows.Networking.Sockets.IWebSocket sender, Windows.Networking.Sockets.WebSocketClosedEventArgs args)
+    private async void WebSocket_Closed(Windows.Networking.Sockets.IWebSocket sender, Windows.Networking.Sockets.WebSocketClosedEventArgs args)
     {
       // You can add code to log or display the code and reason
       // for the closure (stored in args.Code and args.Reason)
@@ -926,7 +922,7 @@ namespace VRCatNet
       // 1015 - TLS or SSL error
       OBSIsConnected = false;
       Debug.WriteLine("WebSocket_Closed; Code: " + args.Code + ", Reason: \"" + args.Reason + "\"");
-      ToggleObsButtonState(false);
+      await ToggleObsButtonState(false);
       // Add additional code here to handle the WebSocket being closed.
     }
 

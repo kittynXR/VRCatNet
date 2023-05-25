@@ -10,6 +10,7 @@ using CoreOSC;
 using System;
 using System.Diagnostics;
 using Windows.Security.Credentials;
+using Windows.UI.Core;
 
 //////////
 /////
@@ -45,7 +46,7 @@ namespace VRCatNet
       textInput.Focus(FocusState.Programmatic);
     }
     
-    private void gButton_Click(object sender, RoutedEventArgs e)
+    private async void gButton_Click(object sender, RoutedEventArgs e)
     {
       if (!isSendingMessage)
       {
@@ -53,7 +54,7 @@ namespace VRCatNet
         messageSentByApp = true;
         textInput.Text = NutButtonText;
         
-        SendMessage();
+        await SendMessage();
         isSendingMessage = false;
       }
 
@@ -74,6 +75,7 @@ namespace VRCatNet
     private void toggleAudio_Checked(object sender, RoutedEventArgs e)
     {
       audioEnabled = true;
+
       textInput.Focus(FocusState.Programmatic);
     }
 
@@ -131,7 +133,6 @@ namespace VRCatNet
         try
         {
           await InitializeTwitchClient();
-          initTwitchButton.Content = "Disconnect TTV";
         }
         catch (Exception ex)
         {
@@ -142,26 +143,25 @@ namespace VRCatNet
         ShutdownTwitchClient();
         twitchClient.Disconnect();
         twitchIsConnected = false;
-        UpdateTextHistory("TTV Disconnected. . .");
-        initTwitchButton.Content = "Connect TTV";
+        await UpdateTextHistory("TTV Disconnected. . .");
       }
 
       textInput.Focus(FocusState.Programmatic);
     }
 
-    private void textInput_TextChanged(object sender, TextChangedEventArgs e)
+    private async void textInput_TextChanged(object sender, TextChangedEventArgs e)
     {
-      UpdateCharacterCounter();
+      await UpdateCharacterCounter();
     }
 
-    private void TextInput_KeyUp(object sender, KeyRoutedEventArgs e)
+    private async void TextInput_KeyUp(object sender, KeyRoutedEventArgs e)
     {
       if (e.Key == VirtualKey.Enter && !isSendingMessage)
       {
         isSendingMessage = true;
         e.Handled = true;
-        SendMessage();
-        ScrollToBottom();
+        await SendMessage();
+        await ScrollToBottom();
         isSendingMessage = false;
       }
 
@@ -170,13 +170,19 @@ namespace VRCatNet
         oscSender.Send(new OscMessage("/chatbox/typing", true));
     }
 
-    private void TypingTimer_Tick(object sender, object e)
+    private async void TypingTimer_Tick(object sender, object e)
     {
       // Set the /chatbox/typing OSC endpoint to false when the timer ticks
       if (toggleOsc.IsChecked.Value) oscSender.Send(new OscMessage("/chatbox/typing", false));
 
-      //toggleTyping.UpdateButtonColor();
-      toggleTyping.SetTypingColor(false);
+      if(Dispatcher.HasThreadAccess)
+      {
+        toggleTyping.SetTypingColor(false);
+      }
+      await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+      {
+        toggleTyping.SetTypingColor(false);
+      });
 
       typingTimer.Stop(); // Stop the timer
     }
@@ -236,13 +242,13 @@ namespace VRCatNet
       textInput.Focus(FocusState.Programmatic);
     }
 
-    private void SendButton_Click(object sender, RoutedEventArgs e)
+    private async void SendButton_Click(object sender, RoutedEventArgs e)
     {
       if (!isSendingMessage)
       {
         isSendingMessage = true;
         messageSentByApp = true;
-        SendMessage();
+        await SendMessage();
         isSendingMessage = false;
       }
 
