@@ -32,11 +32,11 @@ namespace VRCatNet
   /// </summary>
   public sealed partial class MainPage : Page
   {
-    private void makeClip_Click(object sender, RoutedEventArgs e)
+    private async void makeClip_Click(object sender, RoutedEventArgs e)
     {
       if(OBSIsConnected && OBSReplayEnabled)
       {
-        ObsRequest("SaveReplayBuffer");
+        await ObsRequest("SaveReplayBuffer");
       }
       //if(twitchIsConnected && twitchFullAuth)
       if(twitchIsConnected)
@@ -223,10 +223,10 @@ namespace VRCatNet
       pauseScroll = true;
     }
 
-    private void togglePauseScroll_Unchecked(object sender, RoutedEventArgs e)
+    private async void togglePauseScroll_Unchecked(object sender, RoutedEventArgs e)
     {
       pauseScroll = false;
-      ScrollToBottom(); // Scroll to the bottom when the pause is released
+      await ScrollToBottom(); // Scroll to the bottom when the pause is released
     }
 
     private void ClearInputButton_Click(object sender, RoutedEventArgs e)

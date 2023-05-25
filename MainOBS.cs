@@ -526,7 +526,7 @@ namespace VRCatNet
       obsPauseToggle.IsChecked = false;
 
       obsRecordToggle.Content = "*REC*";
-      await ObsRequest("StopRecord"));
+      await ObsRequest("StopRecord");
 
       textInput.Focus(FocusState.Programmatic);
     }

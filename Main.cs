@@ -40,6 +40,8 @@ namespace VRCatNet
     private bool pauseScroll;
     private string NutButtonText = "";
 
+    private ScrollViewer scrollViewer;
+
     private Dictionary<string, BitmapImage> _emoteCache = new Dictionary<string, BitmapImage>();
 
     public MainPage()
@@ -76,9 +78,48 @@ namespace VRCatNet
       textInput.KeyDown             += TextInput_KeyUp;
       clearInputButton.Click        += ClearInputButton_Click;
       clearOscEndpointButton.Click  += ClearOscEndpointButton_Click;
-
+      
       Application.Current.Suspending += new SuspendingEventHandler(OnSuspending);
       Window.Current.Activated += OnActivated;
+    }
+
+    private void ListView_Loaded(object sender, RoutedEventArgs e)
+    {
+      scrollViewer = GetScrollViewer(sender as ListView);
+      if (scrollViewer != null)
+      {
+        scrollViewer.ViewChanged += ScrollViewer_ViewChanged;
+      }
+    }
+
+    private void ListView_Unloaded(object sender, RoutedEventArgs e)
+    {
+      if (scrollViewer != null)
+      {
+        scrollViewer.ViewChanged -= ScrollViewer_ViewChanged;
+      }
+    }
+
+    private void ScrollViewer_ViewChanged(object sender, ScrollViewerViewChangedEventArgs e)
+    {
+      if (!e.IsIntermediate)
+      {
+        textInput.Focus(FocusState.Programmatic);
+      }
+    }
+
+    public ScrollViewer GetScrollViewer(DependencyObject depObj)
+    {
+      if (depObj is ScrollViewer) return depObj as ScrollViewer;
+
+      for (int i = 0; i < VisualTreeHelper.GetChildrenCount(depObj); i++)
+      {
+        var child = VisualTreeHelper.GetChild(depObj, i);
+
+        var result = GetScrollViewer(child);
+        if (result != null) return result;
+      }
+      return null;
     }
 
     private void OscTriggers_Click(object sender, RoutedEventArgs e)
@@ -263,7 +304,6 @@ namespace VRCatNet
         await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
         {
           textHistory.ScrollIntoView(textHistory.Items.LastOrDefault());
-          textInput.Focus(FocusState.Programmatic);
         });
       }
     }

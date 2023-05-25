@@ -263,10 +263,11 @@ namespace VRCatNet
         {
           if (twitchClient != null)
           {
-            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, 
+              async () =>
             {
               textInput.Text = newQuickChatInputs[currentIndex].Text;
-              SendMessage();
+              await SendMessage();
               quickChatDialog.Hide();
               textInput.Focus(FocusState.Programmatic);
             });
@@ -324,6 +325,7 @@ namespace VRCatNet
             localSettings.Values[$"QuickChat{i}"] = newQuickChatInputs[i].Text;
           }
         }
+        await Task.Delay(250);
         textInput.Focus(FocusState.Programmatic);
       }
     }

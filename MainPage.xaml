@@ -89,12 +89,15 @@
         <!-- Text history and chat display -->
         <Grid Grid.Row="0" Grid.Column="1" Margin="5" AutomationProperties.Name="Text Grid">
             <ListView x:Name="textHistory"
-              ItemTemplate="{StaticResource ChatItemTemplate}"
-              ScrollViewer.HorizontalScrollMode="Disabled"
-              ScrollViewer.VerticalScrollBarVisibility="Auto"
-              SelectionMode="None"
-              IsItemClickEnabled="False"
-              ContainerContentChanging="TextHistory_ContainerContentChanging" AutomationProperties.Name="Text History Scrollback"/>
+                Loaded="ListView_Loaded"
+                Unloaded="ListView_Unloaded"
+                ItemTemplate="{StaticResource ChatItemTemplate}"
+                ScrollViewer.HorizontalScrollMode="Disabled"
+                ScrollViewer.VerticalScrollBarVisibility="Auto"
+                SelectionMode="None"
+                IsItemClickEnabled="False"
+                ContainerContentChanging="TextHistory_ContainerContentChanging" 
+                AutomationProperties.Name="Text History Scrollback"/>
         </Grid>
 
         <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Vertical" AutomationProperties.Name="Bottom Panel">
