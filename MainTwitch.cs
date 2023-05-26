@@ -147,7 +147,7 @@ namespace VRCatNet
         {
           if (twitchClient != null)
           {
-            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+            await Dispatcher.RunAsync(CoreDispatcherPriority.Low, () =>
             {
               twitchClient.LeaveChannel(currentChannel);
               Task.Delay(TimeSpan.FromSeconds(1));
@@ -179,7 +179,7 @@ namespace VRCatNet
       {
         if (twitchClient != null)
         {
-          await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+          await Dispatcher.RunAsync(CoreDispatcherPriority.Low, () =>
           {
             twitchClient.LeaveChannel(currentChannel);
             Task.Delay(TimeSpan.FromSeconds(1));
@@ -263,7 +263,7 @@ namespace VRCatNet
         {
           if (twitchClient != null)
           {
-            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, 
+            await Dispatcher.RunAsync(CoreDispatcherPriority.Low, 
               async () =>
             {
               textInput.Text = newQuickChatInputs[currentIndex].Text;
@@ -325,63 +325,9 @@ namespace VRCatNet
             localSettings.Values[$"QuickChat{i}"] = newQuickChatInputs[i].Text;
           }
         }
-        await Task.Delay(250);
         textInput.Focus(FocusState.Programmatic);
       }
     }
-
-    /*
-        private async void DropGame_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
-        {
-          var dropDialog = new ContentDialog();
-
-          var pizzaBtn = new Button
-          { Content = "pineapple", HorizontalAlignment = Windows.UI.Xaml.HorizontalAlignment.Center };
-
-          pizzaBtn.Click += (s, args) =>
-          {
-            textInput.Text = "!drop luunavrPizza";
-            SendMessage();
-            dropDialog.Hide();
-            textInput.Focus(FocusState.Programmatic);
-          };
-
-          var cuteBtn = new Button
-          { Content = "ucute", HorizontalAlignment = Windows.UI.Xaml.HorizontalAlignment.Center };
-
-          cuteBtn.Click += (s, args) =>
-          {
-            textInput.Text = "!drop kittyn9Ucute";
-            SendMessage();
-            dropDialog.Hide();
-            textInput.Focus(FocusState.Programmatic);
-          };
-
-          var derpBtn = new Button
-          { Content = "derp", HorizontalAlignment = Windows.UI.Xaml.HorizontalAlignment.Center };
-
-          derpBtn.Click += (s, args) =>
-          {
-            textInput.Text = "!drop totsDerp";
-            SendMessage();
-            dropDialog.Hide();
-            textInput.Focus(FocusState.Programmatic);
-          };
-
-          dropDialog.Title = "Chat Games";
-          dropDialog.Content = new StackPanel
-          {
-              Children =
-                        {
-                          pizzaBtn,
-                          cuteBtn,
-                          derpBtn
-                        },
-          };
-          dropDialog.PrimaryButtonText = "Close";
-
-          var result = await dropDialog.ShowAsync();
-        }*/
 
     private void TtvPoints_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
     {
@@ -460,12 +406,10 @@ namespace VRCatNet
 
       await Task.WhenAll(connectedTcs.Task, joinedTcs.Task);
     }
-//
-// change all these async voids to async Task or Task<T>
-//
+
     private async void TwitchClient_OnConnected(object sender, OnConnectedArgs e)
     {
-      await Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
+      await Dispatcher.RunAsync(CoreDispatcherPriority.Low,
           async () =>
           {
             await UpdateTextHistory($"Connected to Twitch chat.\n");
@@ -477,7 +421,7 @@ namespace VRCatNet
 
     private async void TwitchClient_OnJoinedChannel(object sender, OnJoinedChannelArgs e)
     {
-      await Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
+      await Dispatcher.RunAsync(CoreDispatcherPriority.Low,
           async () =>
           {
             await UpdateTextHistory($"Joined channel: {e.Channel}\n");
@@ -489,7 +433,7 @@ namespace VRCatNet
 
     private async void TwitchClient_OnLeftChannel(object sender, OnLeftChannelArgs e)
     {
-      await Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
+      await Dispatcher.RunAsync(CoreDispatcherPriority.Low,
           async () =>
           {
             await UpdateTextHistory($"Parted channel: {e.Channel}\n");
@@ -500,7 +444,7 @@ namespace VRCatNet
 
     private async void TwitchClient_OnDisconnected(object sender, OnDisconnectedEventArgs e)
     {
-      await Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
+      await Dispatcher.RunAsync(CoreDispatcherPriority.Low,
         async () =>
         {
           await UpdateTextHistory($"Disconnected from Twitch chat.\n");
@@ -523,7 +467,7 @@ namespace VRCatNet
         }
       }
       twitchIsConnected = false;
-      await Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
+      await Dispatcher.RunAsync(CoreDispatcherPriority.Low,
         () =>
         {
           initTwitchButton.Content = "Connect TTV";
@@ -583,7 +527,7 @@ namespace VRCatNet
         }
         else
         {
-          await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, 
+          await Dispatcher.RunAsync(CoreDispatcherPriority.Low, 
           async () =>
           {
             await UpdateTextHistory(e.ChatMessage.Message, e.ChatMessage.Username, e.ChatMessage.EmoteSet.Emotes);
@@ -600,7 +544,7 @@ namespace VRCatNet
     private async void TwitchClient_OnConnectionError(object sender, OnConnectionErrorArgs e)
     {
       Debug.WriteLine($"Connection error: {e.Error.Message}");
-      await Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
+      await Dispatcher.RunAsync(CoreDispatcherPriority.Low,
           async () =>
           {
             await UpdateTextHistory($"Connection error: {e.Error.Message}\n");
@@ -610,12 +554,11 @@ namespace VRCatNet
     private async void TwitchClient_OnReconnected(object sender, EventArgs e)
     {
       Debug.WriteLine("Reconnected to Twitch chat.");
-      await Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
+      await Dispatcher.RunAsync(CoreDispatcherPriority.Low,
           async () =>
           {
             await UpdateTextHistory("Reconnected to Twitch chat.\n");
           });
     }
-
   }
 }

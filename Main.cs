@@ -316,7 +316,7 @@ namespace VRCatNet
       {
         if (toggleTwitch.IsChecked.Value && twitchIsConnected)
         {
-          SendStreamCaption(textInput.Text);
+          await SendStreamCaption(textInput.Text);
           twitchClient.SendMessage("#" + currentChannel, textInput.Text);
         }
       }

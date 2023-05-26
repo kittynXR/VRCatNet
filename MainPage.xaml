@@ -22,20 +22,24 @@
             <RichTextBlock IsTextSelectionEnabled="True">
                 <Paragraph>
                     <InlineUIContainer>
-                        <ItemsControl ItemsSource="{x:Bind ChatElements}" ItemsPanel="{StaticResource HorizontalItemsStackPanel}">
-                            <ItemsControl.ItemTemplate>
+                        <ListView ItemsSource="{x:Bind ChatElements}" ItemsPanel="{StaticResource VirtualizingHorizontalItemsStackPanel}">
+                            <ListView.ItemTemplate>
                                 <DataTemplate x:DataType="local:ChatElement">
                                     <Grid>
                                         <TextBlock Text="{x:Bind Text}" Visibility="{x:Bind IsEmote, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Reverse}" />
                                         <Image Source="{x:Bind EmoteImage}" Visibility="{x:Bind IsEmote, Converter={StaticResource BoolToVisibilityConverter}}" Width="28" Height="28" />
                                     </Grid>
                                 </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+                            </ListView.ItemTemplate>
+                        </ListView>
                     </InlineUIContainer>
                 </Paragraph>
             </RichTextBlock>
         </DataTemplate>
+        <ItemsPanelTemplate x:Key="VirtualizingHorizontalItemsStackPanel">
+            <VirtualizingStackPanel Orientation="Horizontal"/>
+        </ItemsPanelTemplate>
+
     </Page.Resources>
     <Page.Background>
         <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
