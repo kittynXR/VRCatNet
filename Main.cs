@@ -342,8 +342,11 @@ namespace VRCatNet
         }
 
       // Update the text history with the sent message
-      await UpdateTextHistory(textInput.Text, twitchBroadcasterName);
-      await ScrollToBottom();
+      await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () =>
+      {
+        await UpdateTextHistory(textInput.Text, twitchBroadcasterName);
+        await ScrollToBottom();
+      });
 
       // Clear the text input
       await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>

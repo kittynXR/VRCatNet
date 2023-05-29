@@ -147,10 +147,10 @@ namespace VRCatNet
         {
           if (twitchClient != null)
           {
-            await Dispatcher.RunAsync(CoreDispatcherPriority.Low, () =>
+            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () =>
             {
               twitchClient.LeaveChannel(currentChannel);
-              Task.Delay(TimeSpan.FromSeconds(1));
+              await Task.Delay(TimeSpan.FromSeconds(1));
               twitchClient.JoinChannel(newChannelInputs[currentIndex].Text);
               changeChannelDialog.Hide();
               textInput.Focus(FocusState.Programmatic);
@@ -179,10 +179,10 @@ namespace VRCatNet
       {
         if (twitchClient != null)
         {
-          await Dispatcher.RunAsync(CoreDispatcherPriority.Low, () =>
+          await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () =>
           {
             twitchClient.LeaveChannel(currentChannel);
-            Task.Delay(TimeSpan.FromSeconds(1));
+            await Task.Delay(TimeSpan.FromSeconds(1));
             twitchClient.JoinChannel(twitchBroadcasterName);
             changeChannelDialog.Hide();
              textInput.Focus(FocusState.Programmatic);
@@ -263,16 +263,13 @@ namespace VRCatNet
         {
           if (twitchClient != null)
           {
-            await Dispatcher.RunAsync(CoreDispatcherPriority.Low, 
-              async () =>
-            {
-              textInput.Text = newQuickChatInputs[currentIndex].Text;
-              await SendMessage();
-              quickChatDialog.Hide();
-              textInput.Focus(FocusState.Programmatic);
-            });
+            textInput.Text = newQuickChatInputs[currentIndex].Text;
+            await SendMessage();
+            quickChatDialog.Hide();
+            textInput.Focus(FocusState.Programmatic);
           }
         };
+
       }
 
       for (int i = 0; i < NumQuickItems; i++)
@@ -409,7 +406,7 @@ namespace VRCatNet
 
     private async void TwitchClient_OnConnected(object sender, OnConnectedArgs e)
     {
-      await Dispatcher.RunAsync(CoreDispatcherPriority.Low,
+      await Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
           async () =>
           {
             await UpdateTextHistory($"Connected to Twitch chat.\n");
@@ -421,7 +418,7 @@ namespace VRCatNet
 
     private async void TwitchClient_OnJoinedChannel(object sender, OnJoinedChannelArgs e)
     {
-      await Dispatcher.RunAsync(CoreDispatcherPriority.Low,
+      await Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
           async () =>
           {
             await UpdateTextHistory($"Joined channel: {e.Channel}\n");
@@ -433,7 +430,7 @@ namespace VRCatNet
 
     private async void TwitchClient_OnLeftChannel(object sender, OnLeftChannelArgs e)
     {
-      await Dispatcher.RunAsync(CoreDispatcherPriority.Low,
+      await Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
           async () =>
           {
             await UpdateTextHistory($"Parted channel: {e.Channel}\n");
@@ -444,7 +441,7 @@ namespace VRCatNet
 
     private async void TwitchClient_OnDisconnected(object sender, OnDisconnectedEventArgs e)
     {
-      await Dispatcher.RunAsync(CoreDispatcherPriority.Low,
+      await Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
         async () =>
         {
           await UpdateTextHistory($"Disconnected from Twitch chat.\n");
@@ -467,7 +464,7 @@ namespace VRCatNet
         }
       }
       twitchIsConnected = false;
-      await Dispatcher.RunAsync(CoreDispatcherPriority.Low,
+      await Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
         () =>
         {
           initTwitchButton.Content = "Connect TTV";
@@ -513,9 +510,22 @@ namespace VRCatNet
       if (messageSentByApp &&
           e.ChatMessage.Username.Equals(twitchBroadcasterName, StringComparison.OrdinalIgnoreCase))
       {
-        messageSentByApp = false;
-        await ScrollToBottom();
-        return;
+        if (Dispatcher.HasThreadAccess)
+        {
+          messageSentByApp = false;
+          await ScrollToBottom();
+          return;
+        }
+        else
+        {
+          await Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
+          async () =>
+          {
+            messageSentByApp = false;
+            await ScrollToBottom();
+            return;
+          });
+        }
       }
 
       try
@@ -527,7 +537,7 @@ namespace VRCatNet
         }
         else
         {
-          await Dispatcher.RunAsync(CoreDispatcherPriority.Low, 
+          await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, 
           async () =>
           {
             await UpdateTextHistory(e.ChatMessage.Message, e.ChatMessage.Username, e.ChatMessage.EmoteSet.Emotes);
@@ -544,7 +554,7 @@ namespace VRCatNet
     private async void TwitchClient_OnConnectionError(object sender, OnConnectionErrorArgs e)
     {
       Debug.WriteLine($"Connection error: {e.Error.Message}");
-      await Dispatcher.RunAsync(CoreDispatcherPriority.Low,
+      await Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
           async () =>
           {
             await UpdateTextHistory($"Connection error: {e.Error.Message}\n");
@@ -554,7 +564,7 @@ namespace VRCatNet
     private async void TwitchClient_OnReconnected(object sender, EventArgs e)
     {
       Debug.WriteLine("Reconnected to Twitch chat.");
-      await Dispatcher.RunAsync(CoreDispatcherPriority.Low,
+      await Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
           async () =>
           {
             await UpdateTextHistory("Reconnected to Twitch chat.\n");
