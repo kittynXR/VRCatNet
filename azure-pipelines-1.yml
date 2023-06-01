@@ -1,5 +1,0 @@
-pool:
-  name: BlenderBuilder
-
-steps:
-- script: echo Hello, world!
