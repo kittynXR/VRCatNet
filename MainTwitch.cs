@@ -33,6 +33,8 @@ namespace VRCatNet
     private string twitchBroadcasterName;
     private bool didShutdown;
 
+    private ContentDialog _currentDialog;
+
     private List<StackPanel> gameButtonPanels;
 
     private async Task InitializeTwitchClient()
@@ -99,6 +101,9 @@ namespace VRCatNet
 
     private async void ChangeChannels_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
     {
+      if (_currentDialog != null)
+        return; // There is already a dialog open.
+
       var localSettings = ApplicationData.Current.LocalSettings;
       string[] storedAltChannels = new string[NumQuickItems];
       TextBox[] newChannelInputs = new TextBox[NumQuickItems];
@@ -191,12 +196,12 @@ namespace VRCatNet
         }
       };
 
-
-
-
+      _currentDialog = changeChannelDialog; // Set the _currentDialog before opening it.
 
       // Show the dialog and update the Twitch client's OAuth key, broadcaster name, OSC address, and OSC port if provided
       var result = await changeChannelDialog.ShowAsync();
+
+      _currentDialog = null; // Clear the _currentDialog after closing it.
 
       if (result == ContentDialogResult.Primary)
       {
@@ -214,6 +219,9 @@ namespace VRCatNet
 
     private async void QuickChat_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
     {
+      if (_currentDialog != null)
+        return; // There is already a dialog open.
+
       var localSettings = ApplicationData.Current.LocalSettings;
       string[] storedQuickChat = new string[NumQuickItems];
       TextBox[] newQuickChatInputs = new TextBox[NumQuickItems];
@@ -310,8 +318,11 @@ namespace VRCatNet
           }
         }
       };
+      _currentDialog = quickChatDialog;
 
       var result = await quickChatDialog.ShowAsync();
+
+      _currentDialog = null;
 
       if (result == ContentDialogResult.Primary)
       {
@@ -358,14 +369,17 @@ namespace VRCatNet
 
     private void ShutdownTwitchClient()
     {
-      twitchClient.OnMessageSent -= TwitchClient_OnMessageSent;
-      twitchClient.OnMessageReceived -= TwitchClient_OnMessageReceived;
-      twitchClient.OnConnected -= TwitchClient_OnConnected;
-      twitchClient.OnJoinedChannel -= TwitchClient_OnJoinedChannel;
-      twitchClient.OnLeftChannel -= TwitchClient_OnLeftChannel;
+      if(twitchClient != null)
+      {
+        twitchClient.OnMessageSent -= TwitchClient_OnMessageSent;
+        twitchClient.OnMessageReceived -= TwitchClient_OnMessageReceived;
+        twitchClient.OnConnected -= TwitchClient_OnConnected;
+        twitchClient.OnJoinedChannel -= TwitchClient_OnJoinedChannel;
+        twitchClient.OnLeftChannel -= TwitchClient_OnLeftChannel;
 
-      twitchClient.OnConnectionError -= TwitchClient_OnConnectionError;
-      twitchClient.OnReconnected -= TwitchClient_OnReconnected;
+        twitchClient.OnConnectionError -= TwitchClient_OnConnectionError;
+        twitchClient.OnReconnected -= TwitchClient_OnReconnected;
+      }
 
       didShutdown = true;
     }

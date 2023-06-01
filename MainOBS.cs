@@ -91,6 +91,8 @@ namespace VRCatNet
 
     private async void ObsConfig_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
     {
+      if (_currentDialog != null)
+        return; // There is already a dialog open.
       string OBSAddress   = "127.0.0.1";
       string OBSPort      = "4455";
       string OBSPassword  = "";
@@ -231,8 +233,12 @@ namespace VRCatNet
         SecondaryButtonText = "Cancel"
       };
 
+      _currentDialog = obsDialog; // Set the _currentDialog before opening it.
+
       // Show the dialog and update the Twitch client's OAuth key, broadcaster name, OSC address, and OSC port if provided
       var result = await obsDialog.ShowAsync();
+
+      _currentDialog = null; // Clear the _currentDialog after closing it.
 
       if (result == ContentDialogResult.Primary)
       {
@@ -329,7 +335,11 @@ namespace VRCatNet
           textInput.Focus(FocusState.Programmatic);
         };
 
+        _currentDialog = dialog; // Set the _currentDialog before opening it.
+
         dialog.ShowAsync().AsTask().GetAwaiter();
+        
+        _currentDialog = null; // Clear the _currentDialog after closing it.
       });
     }
 

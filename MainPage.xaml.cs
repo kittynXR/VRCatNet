@@ -257,6 +257,9 @@ namespace VRCatNet
 
     private async void oauthButton_Click(object sender, RoutedEventArgs e)
     {
+      if (_currentDialog != null)
+        return; // There is already a dialog open.
+
       var localSettings = ApplicationData.Current.LocalSettings;
       bool storedConnectOption, storedOAuthOption;
       string storedOscAddress, storedOscPort, storedObsAddress, storedObsPort, storedObsPassword;
@@ -423,8 +426,13 @@ namespace VRCatNet
         SecondaryButtonText = "Cancel"
       };
 
+      _currentDialog = oauthDialog; // Set the _currentDialog before opening it.
+
       // Show the dialog and update the Twitch client's OAuth key, broadcaster name, OSC address, and OSC port if provided
       var result = await oauthDialog.ShowAsync();
+
+      _currentDialog = null; // Clear the _currentDialog after closing it.
+
 
       // This is what happens when you click OK
       //
